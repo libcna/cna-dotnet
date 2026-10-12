@@ -116,7 +116,11 @@ internal static class Program
 
         public ProbeGame()
         {
-            _graphics = new GraphicsDeviceManager(this);
+            // The probe measures HiDef behaviour (separate alpha blending, volume textures), which
+            // XNA refuses under Reach -- the profile a game whose assembly carries no RuntimeProfile
+            // resource starts on, as this project's does. Asked for in code, it holds for every
+            // CompatibilityTarget alike.
+            _graphics = new GraphicsDeviceManager(this) { GraphicsProfile = GraphicsProfile.HiDef };
         }
 
         public bool Ran { get; private set; }
