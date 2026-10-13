@@ -11,17 +11,17 @@ namespace CNA.Interop;
 internal static class CnaNativeAbiPolicy
 {
     internal const string PolicyVersion = "cna-cs-native-abi/1";
-    internal const uint ConsumerVersion = (0u << 16) | (46u << 8) | 0u;
+    internal const uint ConsumerVersion = (0u << 16) | (47u << 8) | 0u;
 
     /// <summary>
     /// The reviewed matrix. It is a point list, never a range: CNA documents that an experimental
     /// 0.x minor may be incompatible, so being newer than an accepted entry proves nothing.
     ///
     /// Every entry it has ever held was retired when a newer reviewed generation replaced it; the
-    /// last was 0.44.0, retired when this consumer moved to 0.46.0 -- the generation the macOS runtime
-    /// qualification runs against, whose only differences are retired renderer constants and UIKit's
-    /// window-system value -- and before it 0.43.0 gave way to 0.44.0, whose activation handlers can
-    /// use the device. A point matrix that kept every generation it had ever accepted would stop being a
+    /// last was 0.46.0, retired when this consumer moved to 0.47.0, which removes CNA's modern GPU
+    /// layer and changes no route this binding imports. Before it 0.44.0 gave way to 0.46.0, the
+    /// generation the macOS runtime qualification ran against, and 0.43.0 to 0.44.0, whose
+    /// activation handlers can use the device. A point matrix that kept every generation it had ever accepted would stop being a
     /// review and start being a range. See docs/native-abi-compatibility.md for the retired matrix
     /// and the evidence behind each entry.
     /// </summary>

@@ -24,12 +24,24 @@ It cannot express CNA's documented experimental-0.x exception by itself.
 
 | CNA.NET consumer | Native library | CNA.NET result | Evidence |
 | --- | --- | --- | --- |
-| 0.46.0 | 0.46.0 | Accept | Consumer baseline at CNA `apple/m4-stabilization` `a3da0a5bb`. |
-| 0.46.0 | Any other 0.x | Reject | No audited matrix entry. |
-| 0.46.0 | Any 1.x+ | Reject | Different ABI major. |
+| 0.47.0 | 0.47.0 | Accept | Consumer baseline at CNA `modules` `e67c54936`. |
+| 0.47.0 | Any other 0.x | Reject | No audited matrix entry. |
+| 0.47.0 | Any 1.x+ | Reject | Different ABI major. |
 
 One accepted entry is not a simplification of the policy; it is what the policy produces when the
-consumer moves. There is no `>= 0.46` rule and there never was a `>= 0.6` one.
+consumer moves. There is no `>= 0.47` rule and there never was a `>= 0.6` one.
+
+0.47.0 replaced 0.46.0 on 2026-10-13 (CNA `plans/plan_modern_retirement.md` MRT-012). CNA 0.47.0
+removes its modern GPU layer: compute, storage buffers and images, indirect draws and GPU timers.
+`tools/coverage/baselinediff.py` measured 1419 consumed exports with 0 absent and 0 changed
+prototypes. Five exports and two structures were removed, none of them imported or mirrored here.
+Twenty-two integer-constant differences were reviewed in `eng/cna-upstream-abi-allowlist.txt`: two
+graphics capabilities, four renderer features, fourteen renderer limits and two `MAXIMUM` sentinels.
+The upstream baseline does not record shift-form flags, so the capability flags for bits 17-18 and
+the format-usage bits 5-7 were reviewed by hand. CNA.NET removes `GraphicsCapability.ComputeShaders`
+and `IndirectDraw`, their `CnaGraphicsCapability` twins, and the three storage members of both
+format-usage enums in the same change; `tools/abi-verify` confirms the rest against the 0.47.0
+headers.
 
 0.46.0 replaced 0.44.0 on 2026-10-09 (CNA `plans/plan_apple_m4.md` AM4-217), crossing 0.45.0, which
 was never admitted. `tools/coverage/baselinediff.py` measured 1419 consumed exports with 0 absent
@@ -53,7 +65,7 @@ its device before its run, as XNA's `ApplyChanges` in a constructor created one)
 
 ### Retired entries
 
-0.6.0, 0.7.0, 0.8.0, 0.19.0, 0.20.0, 0.21.0, 0.35.0, 0.36.0, 0.37.0, 0.38.0, 0.39.0, 0.40.0, 0.41.0, 0.42.0 and 0.43.0 were accepted once. 0.6.0-0.8.0
+0.6.0, 0.7.0, 0.8.0, 0.19.0, 0.20.0, 0.21.0, 0.35.0, 0.36.0, 0.37.0, 0.38.0, 0.39.0, 0.40.0, 0.41.0, 0.42.0, 0.43.0, 0.44.0 and 0.46.0 were accepted once. 0.6.0-0.8.0
 were retired when this binding began importing routes they do not export; 0.19.0, 0.20.0 and 0.21.0
 when the next reviewed generation superseded them; 0.35.0 when this binding began importing 0.36.0's
 `cna_packet_reader_copy_data_ext`, 0.36.0 when it began importing 0.37.0's exception queries,
@@ -63,8 +75,10 @@ game's own handle to the graphics-adapter routes, which 0.39.0 refuses, 0.40.0 w
 importing 0.41.0's `cna_game_run_foreign_thread_calls_ext`, and 0.41.0 when it began reading a
 game's device in its constructor once `ApplyChanges` has created it, which 0.41.0 refuses, and
 0.42.0 when its game threads' sound effects began playing directly, which 0.42.0 queues, and 0.43.0
-when its activation handlers began using the device, which 0.43.0 refuses there.
-The retirements are enforced: `retired-0.8.0`, `retired-0.21.0` and `retired-0.43.0` are refused.
+when its activation handlers began using the device, which 0.43.0 refuses there. 0.44.0 and 0.46.0
+were retired when the next reviewed generation superseded them without changing an imported route.
+The retirements are enforced: `retired-0.8.0`, `retired-0.21.0`, `retired-0.44.0` and
+`retired-0.46.0` are refused.
 
 Each retired fixture exports every route this binding imports and passes every runtime shape probe,
 so the version rule alone refuses it. The sharpest was `retired-0.39.0`: a real 0.39.0 library

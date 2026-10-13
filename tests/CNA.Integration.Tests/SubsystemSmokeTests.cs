@@ -165,9 +165,9 @@ public class SubsystemSmokeTests(ITestOutputHelper output, NativeGameFixture fix
     }
 
     /// <summary>
-    /// The five graphics capabilities that had been unreachable from managed code since CNA 0.8
-    /// added them. CNA surface with no XNA counterpart, so this asserts that the queries answer
-    /// rather than what they answer: asserting a value would be asserting a renderer.
+    /// The graphics capabilities that had been unreachable from managed code since CNA 0.8 added
+    /// them. CNA surface with no XNA counterpart, so this asserts that the queries answer rather
+    /// than what they answer: asserting a value would be asserting a renderer.
     /// </summary>
     [NativeFact]
     public void ExtendedCapabilities_AnswerOnEveryRenderer()
@@ -175,11 +175,9 @@ public class SubsystemSmokeTests(ITestOutputHelper output, NativeGameFixture fix
         fixture.InsideAFrameWithDevice(device =>
         {
             output.WriteLine(
-                $"compute={device.SupportsCapability(GraphicsCapability.ComputeShaders)} " +
                 $"floatRT={device.SupportsCapability(GraphicsCapability.FloatRenderTargets)} " +
                 $"halfFloatRT={device.SupportsCapability(GraphicsCapability.HalfFloatRenderTargets)} " +
-                $"halfFloatFilter={device.SupportsCapability(GraphicsCapability.HalfFloatTextureLinearFiltering)} " +
-                $"indirectDraw={device.SupportsCapability(GraphicsCapability.IndirectDraw)}");
+                $"halfFloatFilter={device.SupportsCapability(GraphicsCapability.HalfFloatTextureLinearFiltering)}");
         });
     }
 

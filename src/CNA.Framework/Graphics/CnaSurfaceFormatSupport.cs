@@ -37,9 +37,10 @@ public enum CnaSurfaceFormatUsage : uint
     Filterable = 1u << 2,
     RenderTarget = 1u << 3,
     Blendable = 1u << 4,
-    StorageRead = 1u << 5,
-    StorageWrite = 1u << 6,
-    StorageAtomic = 1u << 7,
+
+    // Bits 5-7 named the storage-image usages of CNA's modern GPU layer. CNA 0.47 retired that
+    // layer; the bits stay reserved and no renderer reports them.
+
     TransferSource = 1u << 8,
     TransferDestination = 1u << 9,
     Mipmapped = 1u << 10,

@@ -22,8 +22,6 @@ public enum CnaGraphicsCapability : uint
     FloatRenderTargets = 14,
     HalfFloatRenderTargets = 15,
     HalfFloatTextureLinearFiltering = 16,
-    ComputeShaders = 17,
-    IndirectDraw = 18,
 }
 
 /// <summary>

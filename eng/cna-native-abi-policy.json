@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "policyVersion": "cna-cs-native-abi/1",
-  "consumerAbi": "0.46.0",
+  "consumerAbi": "0.47.0",
   "versionSemantics": {
     "major": "For ABI 1.x and later, a change permits breaks only at a new major. ABI 0 is experimental and does not provide this guarantee between minors.",
     "minorBefore1": "A reviewed ABI generation that may be additive or incompatible; never accepted as a same-major range.",
@@ -25,10 +25,10 @@
   },
   "acceptedVersions": [
     {
-      "libraryAbi": "0.46.0",
+      "libraryAbi": "0.47.0",
       "classification": "exact",
       "accepted": true,
-      "evidence": "Consumer baseline at CNA apple/m4-stabilization a3da0a5bb (0.46.0), the generation the macOS runtime qualification (AM4-217) runs against. tools/coverage/baselinediff.py 0.44.0 (ed885a8ae) -> 0.46.0 (a3da0a5bb) with eng/cna-upstream-abi-allowlist.txt: 1419 consumed exports, 0 absent, 0 changed prototype; 3210 -> 3210 exports, 0 added, 0 removed; 0 struct, scalar or string differences; five reviewed integer-constant differences -- RRC-018's four retired renderer identities (values reserved, never reported, never named by CNA.NET) and AM4-037's CNA_NATIVE_WINDOW_SYSTEM_UIKIT moving the window-system MAXIMUM 8 -> 9 (a family CNA.NET does not consume); 0 unreviewed breaking differences. 0.45.0 was never admitted."
+      "evidence": "Consumer baseline at CNA modules e67c54936 (0.47.0), the generation that retires CNA's modern GPU layer (plans/plan_modern_retirement.md MRT-008, MRT-012). tools/coverage/baselinediff.py 0.46.0 (a3da0a5bb) -> 0.47.0 (e67c54936) with eng/cna-upstream-abi-allowlist.txt: 1419 consumed exports, 0 absent, 0 changed prototype; 3210 -> 3205 exports, 5 removed (compute work-group queries and indirect-argument initializers, none imported here), 0 added; 2 structs removed (the indirect-argument structures, mirrored by no managed layout); 0 scalar or string differences; 22 reviewed integer-constant differences -- two graphics capabilities, four renderer features and fourteen renderer limits of the retired layer, and the capability and limit MAXIMUM sentinels 18 -> 16 and 21 -> 20; 0 unreviewed breaking differences. Reviewed by hand because the upstream baseline does not record shift-form flags: the capability flags for bits 17-18 and the format-usage bits 5-7 were removed, and CNA_RENDERER_FORMAT_USAGE_ALL lost bits 5-7. CNA.NET drops GraphicsCapability.ComputeShaders and IndirectDraw, CnaGraphicsCapability's twins, and the three storage members of both format-usage enums in the same change."
     }
   ],
   "retiredVersions": [
@@ -111,16 +111,21 @@
       "libraryAbi": "0.44.0",
       "retiredBecause": "Superseded by 0.46.0 (crossing the never-admitted 0.45.0). Nothing this consumer imports differs between them -- the step removed four retired renderer constants and added UIKit's window-system value -- so the retired-0.44.0 fixture passes every symbol and shape probe and is refused on the version rule alone.",
       "previousClassification": "exact"
+    },
+    {
+      "libraryAbi": "0.46.0",
+      "retiredBecause": "Superseded by 0.47.0. Every route this consumer imports is unchanged between them; the step removed the modern GPU layer, whose capability, feature, limit and format-usage values this consumer no longer names. The retired-0.46.0 fixture therefore passes every symbol and shape probe and is refused on the version rule alone.",
+      "previousClassification": "exact"
     }
   ],
   "default": "reject",
   "fixtures": [
     {
-      "name": "exact-0.46.0",
+      "name": "exact-0.47.0",
       "expected": "accept"
     },
     {
-      "name": "exact-0.46.0-extra-symbol",
+      "name": "exact-0.47.0-extra-symbol",
       "expected": "accept"
     },
     {
@@ -140,7 +145,11 @@
       "expected": "reject"
     },
     {
-      "name": "unreviewed-0.47.0",
+      "name": "retired-0.46.0",
+      "expected": "reject"
+    },
+    {
+      "name": "unreviewed-0.48.0",
       "expected": "reject"
     },
     {
@@ -156,7 +165,7 @@
       "expected": "reject"
     },
     {
-      "name": "structurally-incompatible-0.46.0",
+      "name": "structurally-incompatible-0.47.0",
       "expected": "reject"
     },
     {

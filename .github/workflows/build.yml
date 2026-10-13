@@ -12,15 +12,15 @@ permissions:
 env:
   DOTNET_NOLOGO: "1"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-  # The CNA generation this binding is written against: ABI 0.46.0, on CNA's `apple/m4-stabilization`
-  # branch at the commit the macOS runtime qualification ran against (CNA plans/plan_apple_m4.md
-  # AM4-217); it carries everything 0.44.0 did. Pin it. A branch moves, and a header tree ahead of the
+  # The CNA generation this binding is written against: ABI 0.47.0, on CNA's `modules` branch at the
+  # commit that completes the removal of the modern GPU layer (CNA plans/plan_modern_retirement.md
+  # MRT-012); it carries everything 0.46.0 did. Pin it. A branch moves, and a header tree ahead of the
   # reviewed matrix fails the ABI gates by design -- which is the gates working, and not something to
   # fix by tracking the branch.
-  CNA_UPSTREAM_COMMIT: a3da0a5bbd58698d69b015ab4f79e647c4664eb7
-  # The generation the reviewed matrix accepted immediately before this one (0.44.0). The upstream
+  CNA_UPSTREAM_COMMIT: e67c549366c1e433e5840a267f660b9f25ab9856
+  # The generation the reviewed matrix accepted immediately before this one (0.46.0). The upstream
   # diff gate measures forward from here, which is what the ABI policy asks for.
-  CNA_PREVIOUS_ACCEPTED_COMMIT: ed885a8ae5175c65c9e2ad9fd0124d0b8332f3d5
+  CNA_PREVIOUS_ACCEPTED_COMMIT: a3da0a5bbd58698d69b015ab4f79e647c4664eb7
   CNA_PACKAGE_VERSION: 0.1.0-ci.${{ github.run_number }}
 
 jobs:

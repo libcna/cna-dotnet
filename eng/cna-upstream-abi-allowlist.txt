@@ -9,17 +9,54 @@
 # eng/cna-native-abi-policy.json against the one proposed to replace it -- because a finding is a
 # statement about one step and matches nothing in the next.
 #
-# 2026-10-09, ABI 0.44.0 (CNA ed885a8ae) -> 0.46.0 (CNA a3da0a5bb), CNA plans/plan_apple_m4.md AM4-217.
-# 0.45.0 (RRC-018) was never admitted; this step crosses it. 1419 consumed exports, 0 absent, 0
-# changed prototype; 3210 -> 3210 exports; 0 struct, scalar or string differences. The five
-# integer-constant findings below were reviewed, and none reaches this binding:
+# 2026-10-13, ABI 0.46.0 (CNA a3da0a5bb) -> 0.47.0 (CNA modules e67c54936), CNA
+# plans/plan_modern_retirement.md MRT-008/MRT-012. 1419 consumed exports, 0 absent, 0 changed
+# prototype; 3210 -> 3205 exports; no scalar or string difference. Every finding below belongs to the
+# modern GPU layer CNA retired in this generation, and none reaches this binding.
 #
-# - RRC-018 retired four renderer identities. Their values stay reserved and are never reassigned,
-#   a library of this generation never reports them, and CNA.NET names no renderer constant.
-integer constants: CNA_GRAPHICS_RENDERER_CANVAS was removed
-integer constants: CNA_GRAPHICS_RENDERER_DIRECTX12 was removed
-integer constants: CNA_GRAPHICS_RENDERER_OPENGLES2 was removed
-integer constants: CNA_GRAPHICS_RENDERER_WEBGL1 was removed
-# - AM4-037 added CNA_NATIVE_WINDOW_SYSTEM_UIKIT (9) for iOS, which moves the family's MAXIMUM.
-#   CNA.NET does not consume native window handles or the window-system family.
-integer constants: CNA_NATIVE_WINDOW_SYSTEM_MAXIMUM changed 8 -> 9
+# Not listed, because CNA's abi_baseline.json does not record shift-form flag constants and so this
+# tool cannot see them: the generation also removed CNA_GRAPHICS_CAPABILITY_FLAG_COMPUTE_SHADERS and
+# _INDIRECT_DRAW (bits 17-18) and CNA_RENDERER_FORMAT_USAGE_STORAGE_READ, _WRITE and _ATOMIC (bits
+# 5-7), and CNA_RENDERER_FORMAT_USAGE_ALL lost those three bits (8191 -> 7967; the tool reports it as
+# added, since 0.46.0's baseline did not record it). They were reviewed by hand. CNA.NET binds no
+# capability flag and does not name the ALL mask; its two format-usage enums named the three storage
+# bits and drop them in the same change, which tools/abi-verify confirms against the 0.47.0 headers.
+#
+# - The three compute work-group queries and the two indirect-argument initializers were removed with
+#   the compute and indirect-draw paths. CNA.NET never imported any of them.
+export cna_graphics_device_get_max_compute_work_group_count_ext was removed upstream (not consumed here)
+export cna_graphics_device_get_max_compute_work_group_invocations_ext was removed upstream (not consumed here)
+export cna_graphics_device_get_max_compute_work_group_size_ext was removed upstream (not consumed here)
+export cna_indirect_draw_arguments_init was removed upstream (not consumed here)
+export cna_indirect_draw_indexed_arguments_init was removed upstream (not consumed here)
+# - The two indirect-argument structures went with their initializers. No managed layout mirrors them.
+struct CNA_IndirectDrawArguments was removed
+struct CNA_IndirectDrawIndexedArguments was removed
+# - Two graphics capabilities. CNA.NET named them as GraphicsCapability.ComputeShaders and
+#   IndirectDraw (and CnaGraphicsCapability's twins); those members are removed in the same change,
+#   so the managed enums now end where the native family does, at 16.
+integer constants: CNA_GRAPHICS_CAPABILITY_COMPUTE_SHADERS was removed
+integer constants: CNA_GRAPHICS_CAPABILITY_INDIRECT_DRAW was removed
+integer constants: CNA_GRAPHICS_CAPABILITY_MAXIMUM changed 18 -> 16
+# - Four renderer features and fourteen renderer limits of the retired layer. Their ordinals stay
+#   reserved and the query routes refuse them. CNA.NET does not bind the renderer feature or limit
+#   families at all.
+integer constants: CNA_RENDERER_FEATURE_COMPUTE_IMAGE_BINDING was removed
+integer constants: CNA_RENDERER_FEATURE_COMPUTE_SHADERS was removed
+integer constants: CNA_RENDERER_FEATURE_GPU_TIMERS was removed
+integer constants: CNA_RENDERER_FEATURE_INDIRECT_DRAWING was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_STORAGE_BUFFER_BINDINGS was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_COUNT_X was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_COUNT_Y was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_COUNT_Z was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_INVOCATIONS was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_SIZE_X was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_SIZE_Y was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_SIZE_Z was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_STORAGE_BUFFER_BYTES was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_STORAGE_IMAGES_PER_SHADER_STAGE was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_TEXTURE_ARRAY_LAYERS was removed
+integer constants: CNA_RENDERER_LIMIT_MAX_VERTEX_SHADER_STORAGE_BLOCKS was removed
+integer constants: CNA_RENDERER_LIMIT_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT was removed
+integer constants: CNA_RENDERER_LIMIT_TIMESTAMP_PERIOD_PICOSECONDS was removed
+integer constants: CNA_RENDERER_LIMIT_MAXIMUM changed 21 -> 20

@@ -323,7 +323,7 @@ jq -n \
     conflictingLibrariesDiagnostic: "passed",
     explicitOverridePrecedence: "passed",
     nativeAbiPolicy: "cna-cs-native-abi/1",
-    nativeAbiCompatibilityFixtures: "2 accepted / 11 rejected",
+    nativeAbiCompatibilityFixtures: "2 accepted / 12 rejected",
     nativeAbiSelectedLibrary: "passed",
     published: false,
     supportedRidClaim: false
