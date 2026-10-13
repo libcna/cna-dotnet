@@ -12,15 +12,22 @@ permissions:
 env:
   DOTNET_NOLOGO: "1"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-  # The CNA generation this binding is written against: ABI 0.47.0, on CNA's `modules` branch at the
-  # commit that completes the removal of the modern GPU layer (CNA plans/plan_modern_retirement.md
-  # MRT-012); it carries everything 0.46.0 did. Pin it. A branch moves, and a header tree ahead of the
-  # reviewed matrix fails the ABI gates by design -- which is the gates working, and not something to
-  # fix by tracking the branch.
-  CNA_UPSTREAM_COMMIT: e67c549366c1e433e5840a267f660b9f25ab9856
+  # The CNA generation this binding is written against: ABI 0.47.0, the generation that retires CNA's
+  # modern GPU layer (CNA plans/plan_modern_retirement.md MRT-012), on CNA's `next` branch -- its
+  # integration branch; CNA `main` and `develop` still carry 0.46.0, which this binding refuses. Pin
+  # it. A branch moves, and a header tree ahead of the reviewed matrix fails the ABI gates by design
+  # -- which is the gates working, and not something to fix by tracking the branch. Every job that
+  # reads CNA reads this commit, and native-qualified-linux-x64 builds its library from it.
+  CNA_UPSTREAM_COMMIT: fbd8e64a3fde18beeb2861d546a279d90d0ed5bc
   # The generation the reviewed matrix accepted immediately before this one (0.46.0). The upstream
   # diff gate measures forward from here, which is what the ABI policy asks for.
   CNA_PREVIOUS_ACCEPTED_COMMIT: a3da0a5bbd58698d69b015ab4f79e647c4664eb7
+  # The sibling checkouts CNA builds from (its ../sharp-runtime and ../easy-gl, and easy-gl's
+  # ../meta-gl), pinned with it for native-qualified-linux-x64. CNA's configure refuses a sibling
+  # whose declared version it does not support.
+  SHARP_RUNTIME_COMMIT: 7805c5dc695d8e84abd45168ab218793e10a4ad3
+  EASY_GL_COMMIT: f4d6afaf16cdc7e7e73130950bc45e6d865b41bd
+  META_GL_COMMIT: dd3b30055d55fdc42240de7af248259338256992
   CNA_PACKAGE_VERSION: 0.1.0-ci.${{ github.run_number }}
 
 jobs:
@@ -327,9 +334,20 @@ jobs:
             echo "WINDOWS_XNA_STRICT_STATUS=not-configured (protected legal reference archive is absent)"
           fi
 
+  # Builds the pinned CNA's C API from source and runs the native suites against that library, so
+  # every run of this workflow loads a native CNA of exactly CNA_UPSTREAM_COMMIT. Until 2026-10-13 the
+  # job decoded a library from a secret behind a repository variable that was never set: it was
+  # skipped in all 40 runs that had it, so no run of this workflow had loaded a native library.
   native-qualified-linux-x64:
-    if: vars.CNA_NATIVE_LINUX_X64_CONFIGURED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      CC: gcc-14
+      CXX: g++-14
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      CCACHE_BASEDIR: ${{ github.workspace }}
+      CCACHE_MAXSIZE: 2G
+      SDL_AUDIODRIVER: dummy
     steps:
       - uses: actions/checkout@v4
       # The template branch named like this one when it exists, else its default branch: a change
@@ -348,70 +366,125 @@ jobs:
           repository: libcna/cna-dotnet-template
           ref: ${{ steps.template_branch.outputs.ref }}
           path: cna-dotnet-template
+      # CNA beside its siblings, as a developer's tree has them. Top-level submodules only, as CNA's
+      # own CI checks it out: SDL is one, and CNA builds no codec behind SDL_mixer's nested ones.
+      - uses: actions/checkout@v4
+        with:
+          repository: libcna/cna
+          ref: ${{ env.CNA_UPSTREAM_COMMIT }}
+          path: native/cna
+          submodules: true
+      - uses: actions/checkout@v4
+        with:
+          repository: libcna/sharp-runtime
+          ref: ${{ env.SHARP_RUNTIME_COMMIT }}
+          path: native/sharp-runtime
+      - uses: actions/checkout@v4
+        with:
+          repository: libcna/easy-gl
+          ref: ${{ env.EASY_GL_COMMIT }}
+          path: native/easy-gl
+      - uses: actions/checkout@v4
+        with:
+          repository: libcna/meta-gl
+          ref: ${{ env.META_GL_COMMIT }}
+          path: native/meta-gl
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Materialize protected ABI-matched native library
-        env:
-          CNA_NATIVE_LINUX_X64_BASE64: ${{ secrets.CNA_NATIVE_LINUX_X64_BASE64 }}
+      - name: Install CNA's build dependencies
         run: |
-          test -n "$CNA_NATIVE_LINUX_X64_BASE64"
-          printf '%s' "$CNA_NATIVE_LINUX_X64_BASE64" | base64 --decode > "$RUNNER_TEMP/libcna_c_api.so"
-          chmod 755 "$RUNNER_TEMP/libcna_c_api.so"
-      - run: sudo apt-get update && sudo apt-get install -y xvfb
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc-14 g++-14 cmake ninja-build ccache pkg-config xvfb \
+            libcurl4-openssl-dev nlohmann-json3-dev libfreetype-dev zlib1g-dev libopus-dev \
+            libavcodec-dev libavformat-dev libavutil-dev libswresample-dev \
+            libgl1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev \
+            libx11-dev libxext-dev libxrandr-dev libxi-dev libxcursor-dev libxfixes-dev libxss-dev libxtst-dev \
+            libwayland-dev wayland-protocols libxkbcommon-dev \
+            libasound2-dev libpulse-dev libudev-dev libdbus-1-dev
+      - name: Record the SDL submodule commit
+        id: sdl
+        run: echo "sha=$(git -C native/cna/third_party/SDL rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Cache the SDL build CNA makes from its submodule
+        uses: actions/cache@v4
+        with:
+          path: native/cna/.sdl-prebuilt-Linux-x86_64
+          key: cna-sdl-linux-x64-${{ steps.sdl.outputs.sha }}
+      - name: Cache compiler output
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: cna-native-ccache-linux-x64-${{ env.CNA_UPSTREAM_COMMIT }}
+          restore-keys: cna-native-ccache-linux-x64-
+      # The qualified Linux configuration (docs/migrating-xna-games.md): OPENGLES3 with compiled
+      # effects, and every C API family built rather than refused. Installed as the CNACApi
+      # component, the layout a package carries: the library with RUNPATH $ORIGIN and SDL beside it.
+      # Without CNA's static archive, which the component would otherwise install and this binding
+      # does not load.
+      - name: Build and install the pinned CNA C API
+        run: |
+          cmake -S native/cna -B native/cna/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCNA_GRAPHICS_RENDERER=OPENGLES3 \
+            -DCNA_BUILD_C_API=ON \
+            -DCNA_C_API_BUILD_STATIC=OFF \
+            -DCNA_CNAEXT=ON \
+            -DCNA_DEVICES=ON \
+            -DCNA_EASYGL_COMPILED_EFFECTS=ON \
+            -DCNA_ENABLE_DRACO=ON \
+            -DCNA_ENABLE_VIDEO=ON \
+            -DCNA_ENABLE_VOICE=ON \
+            -DCNA_BUILD_TESTS=OFF \
+            -DCNA_BUILD_EXAMPLES=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build native/cna/build --target cna_c_api --parallel 4
+          cmake --install native/cna/build --component CNACApi --prefix "$RUNNER_TEMP/cna-native"
+          ccache --show-stats
+          echo "CNA_NATIVE_LIBRARY=$RUNNER_TEMP/cna-native/lib/libcna_c_api.so" >> "$GITHUB_ENV"
+      # Admission before evidence: the library is the exact reviewed generation, exports every entry
+      # point CNA.Interop imports and passes the runtime canaries, or no test runs against it.
+      - name: Require the built library to be the admitted ABI generation
+        run: |
+          scripts/Verify-NativeAbiCompatibility.sh --configuration Release \
+            --native-library "$CNA_NATIVE_LIBRARY" --output "$RUNNER_TEMP/native-abi"
+          version=$(python3 -c 'import ctypes, os; v = ctypes.CDLL(os.environ["CNA_NATIVE_LIBRARY"]).cna_get_abi_version(); print(f"{v >> 16}.{(v >> 8) & 0xFF}.{v & 0xFF}")')
+          consumer=$(jq -r .consumerAbi eng/cna-native-abi-policy.json)
+          echo "CNA_NATIVE_LINUX_X64=CNA ${CNA_UPSTREAM_COMMIT} ABI ${version} (consumer ${consumer})"
+          test "$version" = "$consumer"
+          echo "Native library under test: CNA \`${CNA_UPSTREAM_COMMIT}\`, C ABI ${version}, built in this run." >> "$GITHUB_STEP_SUMMARY"
       - run: dotnet restore CNA.sln
       - run: dotnet build CNA.sln -c Debug --no-restore -m:1
       - run: dotnet build CNA.sln -c Release --no-restore -m:1
       - name: Native integration Debug
-        env:
-          CNA_NATIVE_LIBRARY: ${{ runner.temp }}/libcna_c_api.so
-          SDL_AUDIODRIVER: dummy
         run: xvfb-run -a dotnet test tests/CNA.Integration.Tests/CNA.Integration.Tests.csproj -c Debug --no-build -m:1
       - name: Native integration Release
-        env:
-          CNA_NATIVE_LIBRARY: ${{ runner.temp }}/libcna_c_api.so
-          SDL_AUDIODRIVER: dummy
         run: xvfb-run -a dotnet test tests/CNA.Integration.Tests/CNA.Integration.Tests.csproj -c Release --no-build -m:1
       - name: GamerServices integration Release (own process; runsettings isolate the keyring)
-        env:
-          CNA_NATIVE_LIBRARY: ${{ runner.temp }}/libcna_c_api.so
-          SDL_AUDIODRIVER: dummy
         run: xvfb-run -a dotnet test tests/CNA.GamerServices.IntegrationTests/CNA.GamerServices.IntegrationTests.csproj -c Release --no-build -m:1
       - name: Ownership 100 cycles Debug and Release
         env:
-          CNA_NATIVE_LIBRARY: ${{ runner.temp }}/libcna_c_api.so
           CNA_OWNERSHIP_STRESS_FAMILY: all
-          SDL_AUDIODRIVER: dummy
           SDL_VIDEODRIVER: offscreen
         run: |
           dotnet run --project tests/CNA.OwnershipStress/CNA.OwnershipStress.csproj -c Debug --no-build -- 100
           dotnet run --project tests/CNA.OwnershipStress/CNA.OwnershipStress.csproj -c Release --no-build -- 100
-      - name: Full 470-observation CNA corpus
+      - name: Full CNA behavior corpus
         env:
-          CNA_NATIVE_LIBRARY: ${{ runner.temp }}/libcna_c_api.so
-          SDL_AUDIODRIVER: dummy
           SDL_VIDEODRIVER: offscreen
         run: scripts/Capture-CnaSnapshots.sh --output "$RUNNER_TEMP/cna-snapshots" --force
       - name: Local package/RID acceptance (never publishes)
         env:
           CNA_TEMPLATE_ROOT: ${{ github.workspace }}/cna-dotnet-template
         run: >-
-          scripts/Package-Acceptance.sh --native-library "$RUNNER_TEMP/libcna_c_api.so"
+          scripts/Package-Acceptance.sh --native-directory "$RUNNER_TEMP/cna-native/lib"
           --package-version "${CNA_PACKAGE_VERSION}" --output "$RUNNER_TEMP/package-acceptance"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: linux-x64-local-qualification
           path: |
+            ${{ runner.temp }}/native-abi/abi-compatibility-report.json
             ${{ runner.temp }}/cna-snapshots
             ${{ runner.temp }}/package-acceptance/acceptance-report.json
-
-  native-qualified-status:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Report native configuration
-        run: |
-          if [[ "${{ vars.CNA_NATIVE_LINUX_X64_CONFIGURED }}" == "true" ]]; then
-            echo "NATIVE_LINUX_X64_STATUS=configured; see native-qualified-linux-x64 job"
-          else
-            echo "NATIVE_LINUX_X64_STATUS=not-configured (protected ABI-matched library is absent)"
-          fi

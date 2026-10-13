@@ -98,7 +98,10 @@ The loader also accepts `CNA_NATIVE_DIR`. Explicit configuration is fail-fast an
 over package-native lookup. Admission follows
 [`cna-cs-native-abi/1`](docs/native-abi-compatibility.md), not a same-major range: the version must
 have a reviewed matrix entry, all 1419 imports must exist, and signature/shape canaries must pass.
-The one accepted entry today is C ABI 0.47.0.
+The one accepted entry today is C ABI 0.47.0: CNA `next`, at the commit `CNA_UPSTREAM_COMMIT` in
+`.github/workflows/build.yml` pins and CI builds the native library from. CNA `main` and `develop`
+still carry 0.46.0 and are refused
+([which CNA this binding pairs with](docs/native-abi-compatibility.md#which-cna-this-binding-pairs-with)).
 Wrong ABI, missing symbols, conflicts, wrong architecture/load failure, and missing-library cases
 report the attempted configuration, consumer/detected ABI where available, RID, and remediation;
 `CNA_NATIVE_DIAGNOSTICS=1` enables low-level loader details.

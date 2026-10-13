@@ -24,7 +24,7 @@ It cannot express CNA's documented experimental-0.x exception by itself.
 
 | CNA.NET consumer | Native library | CNA.NET result | Evidence |
 | --- | --- | --- | --- |
-| 0.47.0 | 0.47.0 | Accept | Consumer baseline at CNA `modules` `e67c54936`. |
+| 0.47.0 | 0.47.0 | Accept | Consumer baseline at CNA `next` `fbd8e64a3`. |
 | 0.47.0 | Any other 0.x | Reject | No audited matrix entry. |
 | 0.47.0 | Any 1.x+ | Reject | Different ABI major. |
 
@@ -35,10 +35,12 @@ consumer moves. There is no `>= 0.47` rule and there never was a `>= 0.6` one.
 removes its modern GPU layer: compute, storage buffers and images, indirect draws and GPU timers.
 `tools/coverage/baselinediff.py` measured 1419 consumed exports with 0 absent and 0 changed
 prototypes. Five exports and two structures were removed, none of them imported or mirrored here.
-Twenty-two integer-constant differences were reviewed in `eng/cna-upstream-abi-allowlist.txt`: two
-graphics capabilities, four renderer features, fourteen renderer limits and two `MAXIMUM` sentinels.
-The upstream baseline does not record shift-form flags, so the capability flags for bits 17-18 and
-the format-usage bits 5-7 were reviewed by hand. CNA.NET removes `GraphicsCapability.ComputeShaders`
+Twenty-eight integer-constant differences were reviewed in `eng/cna-upstream-abi-allowlist.txt`: two
+graphics capabilities and their flag bits 17-18, four renderer features, fourteen renderer limits,
+the storage format-usage bits 5-7, the `CNA_RENDERER_FORMAT_USAGE_ALL` mask (8191 -> 7967) and two
+`MAXIMUM` sentinels. The six flag findings were first reviewed by hand, because CNA's baseline did not
+record a value written `(UINT32_C(1) << n)`; since CNA CBIND-159 the diff evaluates both generations'
+headers and reports them itself (`tools/coverage/test_baselinediff.py`). CNA.NET removes `GraphicsCapability.ComputeShaders`
 and `IndirectDraw`, their `CnaGraphicsCapability` twins, and the three storage members of both
 format-usage enums in the same change; `tools/abi-verify` confirms the rest against the 0.47.0
 headers.
@@ -62,6 +64,19 @@ CBIND-145 (the graphics adapters answer the game's own handle), CBIND-146..151, 
 game thread runs other threads' queued calls while it waits for them) and CBIND-153 (a game lends
 its device before its run, as XNA's `ApplyChanges` in a constructor created one) CBIND-154
 (sound effects play from any thread) and CBIND-155 (activation handlers can use the device).
+
+## Which CNA this binding pairs with
+
+`CNA_UPSTREAM_COMMIT` in `.github/workflows/build.yml` is the one CNA commit this branch is written
+against: today CNA `next` at `fbd8e64a3`, C ABI 0.47.0. CNA's `main` and `develop` still carry 0.46.0
+(its v0.1.0 preparation), which this consumer refuses; `next` is CNA's integration branch, and the
+pin moves only with a reviewed matrix change. Every CI job that reads CNA reads that commit: the
+header gates (`tools/abi-verify`), the upstream diff, and `native-qualified-linux-x64`, which builds
+CNA's C API from it (OPENGLES3 with compiled effects, CNAEXT and devices on, siblings pinned beside
+it), installs the `CNACApi` component, admits that library with
+`scripts/Verify-NativeAbiCompatibility.sh --native-library` and only then runs the integration,
+GamerServices, ownership, corpus and package suites against it. No repository variable or secret is
+involved, so a run that did not load the library fails rather than being skipped.
 
 ### Retired entries
 
