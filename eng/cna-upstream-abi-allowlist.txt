@@ -9,18 +9,11 @@
 # eng/cna-native-abi-policy.json against the one proposed to replace it -- because a finding is a
 # statement about one step and matches nothing in the next.
 #
-# 2026-10-13, ABI 0.46.0 (CNA a3da0a5bb) -> 0.47.0 (CNA modules e67c54936), CNA
-# plans/plan_modern_retirement.md MRT-008/MRT-012. 1419 consumed exports, 0 absent, 0 changed
-# prototype; 3210 -> 3205 exports; no scalar or string difference. Every finding below belongs to the
-# modern GPU layer CNA retired in this generation, and none reaches this binding.
-#
-# Not listed, because CNA's abi_baseline.json does not record shift-form flag constants and so this
-# tool cannot see them: the generation also removed CNA_GRAPHICS_CAPABILITY_FLAG_COMPUTE_SHADERS and
-# _INDIRECT_DRAW (bits 17-18) and CNA_RENDERER_FORMAT_USAGE_STORAGE_READ, _WRITE and _ATOMIC (bits
-# 5-7), and CNA_RENDERER_FORMAT_USAGE_ALL lost those three bits (8191 -> 7967; the tool reports it as
-# added, since 0.46.0's baseline did not record it). They were reviewed by hand. CNA.NET binds no
-# capability flag and does not name the ALL mask; its two format-usage enums named the three storage
-# bits and drop them in the same change, which tools/abi-verify confirms against the 0.47.0 headers.
+# 2026-10-13, ABI 0.46.0 (CNA a3da0a5bb) -> 0.47.0 (CNA next, the commit CNA_UPSTREAM_COMMIT in
+# .github/workflows/build.yml names), CNA plans/plan_modern_retirement.md MRT-008/MRT-012.
+# 1419 consumed exports, 0 absent, 0 changed prototype; 3210 -> 3205 exports; no scalar, string or
+# floating-constant difference. Every finding below belongs to the modern GPU layer CNA retired in
+# this generation, and none reaches this binding.
 #
 # - The three compute work-group queries and the two indirect-argument initializers were removed with
 #   the compute and indirect-draw paths. CNA.NET never imported any of them.
@@ -60,3 +53,14 @@ integer constants: CNA_RENDERER_LIMIT_MAX_VERTEX_SHADER_STORAGE_BLOCKS was remov
 integer constants: CNA_RENDERER_LIMIT_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT was removed
 integer constants: CNA_RENDERER_LIMIT_TIMESTAMP_PERIOD_PICOSECONDS was removed
 integer constants: CNA_RENDERER_LIMIT_MAXIMUM changed 21 -> 20
+# - Their flag bits and the storage format usages. Until 2026-10-13 this tool could not see a value
+#   written `(UINT32_C(1) << n)`, because CNA's baseline did not record one (CNA CBIND-159), and these
+#   six were reviewed by hand; it now evaluates the headers of both generations. CNA.NET binds no
+#   capability flag and does not name the ALL mask; its two format-usage enums named the three storage
+#   bits and drop them in the same change, which tools/abi-verify confirms against the 0.47.0 headers.
+integer constants: CNA_GRAPHICS_CAPABILITY_FLAG_COMPUTE_SHADERS was removed
+integer constants: CNA_GRAPHICS_CAPABILITY_FLAG_INDIRECT_DRAW was removed
+integer constants: CNA_RENDERER_FORMAT_USAGE_STORAGE_READ was removed
+integer constants: CNA_RENDERER_FORMAT_USAGE_STORAGE_WRITE was removed
+integer constants: CNA_RENDERER_FORMAT_USAGE_STORAGE_ATOMIC was removed
+integer constants: CNA_RENDERER_FORMAT_USAGE_ALL changed 8191 -> 7967

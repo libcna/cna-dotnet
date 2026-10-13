@@ -41,9 +41,16 @@ upstream release-to-release diff before a new CNA generation enters the reviewed
 `eng/cna-native-abi-policy.json`, and that evidence used to be produced by hand. Exit 1 means
 something breaking changed; exit 0 is evidence for a matrix entry, not the entry itself.
 
+Constants are compared from CNA's measured `abi_baseline.json` and, for every value an older
+baseline did not record (flag bits written `(UINT32_C(1) << n)`, the masks built from them, floating
+constants it truncated), from each generation's header text through a small evaluator of exactly the
+forms CNA's headers use. Where both exist they must agree, and a value the evaluator cannot read is a
+finding, never a skip. `python3 tools/coverage/test_baselinediff.py` holds those rules; the
+`upstream-abi-diff` CI job runs it before the diff.
+
 Reviewed differences go in `eng/cna-upstream-abi-allowlist.txt`, one exact finding per line with a
-`#` comment recording the decision -- today, the eleven renderer identities CNA 0.20.0 removed and
-the sentinel that moved with them, none of which this binding consumes. The allowlist is checked in
+`#` comment recording the decision -- today, the modern GPU layer CNA retired in 0.47.0, none of
+which this binding consumes. The allowlist is checked in
 both directions: an entry that matches nothing is reported as stale and fails, because a reviewed
 exception that has quietly stopped applying is how an allowlist becomes a blindfold. That was
 verified by planting an entry naming a constant that never existed.
