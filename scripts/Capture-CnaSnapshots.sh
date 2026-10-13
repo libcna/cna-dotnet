@@ -56,6 +56,10 @@ capture_root="$(mktemp -d)"
 trap 'rm -rf -- "$capture_root"' EXIT
 mkdir -p "$capture_root/output"
 
+# DOTNET_CLI_HOME also moves NuGet's global package folder, and the builds below restore: without
+# the first line every project's obj/project.assets.json would name a folder the trap deletes, and
+# the next --no-restore build in this checkout -- Package-Acceptance.sh's -- fails with NETSDK1064.
+export NUGET_PACKAGES="${NUGET_PACKAGES:-${DOTNET_CLI_HOME:-$HOME}/.nuget/packages}"
 export DOTNET_CLI_HOME="$capture_root/dotnet-home"
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
