@@ -49,8 +49,8 @@ Everything here is `internal`. It exists to give the rest of the solution a
 `LibraryImport`-based, source-generated P/Invoke surface over the CNA C ABI,
 plus the small set of ABI-shaped structs (`CnaResult`, `CnaHandle`,
 `CnaVector2`, `CnaColor`, `CnaGameTime`, `CnaKeyboardState`) needed to call
-it. No ergonomics live here — no operators, no properties, no `SafeHandle`.
-That belongs one layer up.
+it. No ergonomics live here — no operators, no properties, no handle
+ownership. That belongs one layer up.
 
 ### `CNA.Framework` (project) → `CNA` namespace
 
@@ -61,9 +61,15 @@ namespace differ). This is where:
 - managed value types (`Vector2`, `Color`, `GameTime`) are implemented
   directly in C#, with no P/Invoke call for trivial operations
   (`docs/binding.md`, *Value types live in the language*);
-- native-backed resources (`Texture2D`, `SpriteBatch`, `GraphicsDevice`) wrap
-  a `SafeHandle` and convert `CnaResult` failures into `CnaException`
-  (`docs/binding.md`, *Resource lifetime* and *Errors*);
+- native-backed resources (`Texture2D`, `SpriteBatch`, buffers, effects) own
+  their handle through `NativeResourceHandle` and convert `CnaResult` failures
+  into `CnaException` (`docs/binding.md`, *Resource lifetime* and *Errors*).
+  It is deliberately not a `SafeHandle`: that is pointer-sized and cannot hold
+  a 64-bit `CNA_Handle` on WebAssembly or any 32-bit target. A game's
+  `GraphicsDevice` owns no handle at all and resolves the callback-scoped
+  device handle again for each operation; only a standalone device created
+  with the public `(GraphicsAdapter, GraphicsProfile, PresentationParameters)`
+  constructor owns one;
 - the `Game` lifecycle bridges to native code through an
   `[UnmanagedCallersOnly]` callback adapter (`docs/binding.md`, *The game
   loop is native; the game is callbacks*).
@@ -196,7 +202,7 @@ Sharp Runtime would be a mistake") before doing so.
 
 Native handles are classified rather than treated uniformly:
 
-- **owned** — one managed owner releases the handle through `SafeHandle`/`Dispose`;
+- **owned** — one managed owner releases the handle through `NativeResourceHandle`/`Dispose`;
 - **borrowed** — valid for the documented owner/callback lifetime and never released by the view;
 - **adopted** — ownership is transferred from one wrapper to another, invalidating the source;
 - **parent-owned** — a child view cannot outlive or destroy the parent resource.
