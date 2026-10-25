@@ -3,15 +3,15 @@ using System.Runtime.InteropServices;
 namespace CNA.Interop;
 
 /// <summary>
-/// Raw P/Invoke surface over the CNA stable C ABI (<c>modules/c-api/include/CNA/C/cna.h</c> in
-/// <c>openeggbert/cna</c>). This is the *only* file in the solution that names the native
-/// library. Nothing here is ergonomic on purpose -- see CNA for the idiomatic layer.
+/// Raw P/Invoke surface over the CNA C ABI (<c>modules/c-api/include/CNA/C/cna.h</c> in
+/// <c>libcna/cna</c>). With its partials <c>Native.Devices.cs</c>, <c>Native.GamerServices.cs</c>
+/// and <c>Native.Net.cs</c> this class declares every CNA C ABI route the solution calls; which
+/// file the logical <c>cna-native</c> library resolves to is <see cref="NativeLibraryResolver"/>'s
+/// decision. Nothing here is ergonomic on purpose -- see CNA for the idiomatic layer.
 ///
-/// This is a minimal slice covering exactly what the <c>samples/HelloGame</c> vertical slice
-/// needs (clear screen, load a texture, draw with SpriteBatch, read the keyboard, exit cleanly),
-/// per the first-program milestone in libcna/cna's docs/binding.md. It intentionally
-/// does not try to guess the full upstream ABI signature set before that ABI exists -- see
-/// plan.md Phase 1 / Phase 4.
+/// It declares the routes CNA.NET uses, not the whole ABI. <c>tools/abi-verify</c> checks every
+/// prototype, structure layout, callback shape and constant here against the C headers, and
+/// <c>docs/native-abi-compatibility.md</c> states which ABI version the declarations admit.
 ///
 /// Signatures follow the ABI conventions of libcna/cna's docs/c-api/ (summarized in
 /// docs/binding.md, "The boundary rules"): opaque handles,
