@@ -2,7 +2,7 @@ namespace CNA;
 
 /// <summary>
 /// A local, managed 2D vector -- no P/Invoke call is made for trivial math, per
-/// openeggbert/cna's analysis_binding.md §23. Field layout mirrors XNA's own
+/// libcna/cna's docs/binding.md ("Value types live in the language"). Field layout mirrors XNA's own
 /// <c>Microsoft.Xna.Framework.Vector2</c> (public mutable X/Y fields) for behavioral parity.
 /// </summary>
 public struct Vector2 : IEquatable<Vector2>

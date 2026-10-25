@@ -9,11 +9,12 @@ namespace CNA.Interop;
 ///
 /// This is a minimal slice covering exactly what the <c>samples/HelloGame</c> vertical slice
 /// needs (clear screen, load a texture, draw with SpriteBatch, read the keyboard, exit cleanly),
-/// per the "first .NET milestone" in openeggbert/cna's analysis_binding.md §38. It intentionally
+/// per the first-program milestone in libcna/cna's docs/binding.md. It intentionally
 /// does not try to guess the full upstream ABI signature set before that ABI exists -- see
 /// plan.md Phase 1 / Phase 4.
 ///
-/// Signatures follow the ABI conventions from analysis_binding.md §8-§16: opaque handles,
+/// Signatures follow the ABI conventions of libcna/cna's docs/c-api/ (summarized in
+/// docs/binding.md, "The boundary rules"): opaque handles,
 /// <see cref="CnaResult"/> instead of exceptions, UTF-8 strings, fixed-width primitives, and
 /// explicit buffers instead of collections.
 /// </summary>

@@ -2,8 +2,8 @@
 
 The minimal end-to-end CNA.NET game: clear the screen, load a texture, draw
 it with `SpriteBatch`, read the keyboard, exit on <kbd>Escape</kbd>.
-Reproduces the reference example from
-`libcna/cna`'s `analysis_binding.md` §38/§140 exactly.
+Reproduces the reference first program in
+`libcna/cna`'s `docs/binding.md` exactly.
 
 ## Status
 

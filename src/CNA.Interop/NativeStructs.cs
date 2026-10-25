@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace CNA.Interop;
 
-/// <summary>ABI-shaped 2D vector. See openeggbert/cna's analysis_binding.md §23.</summary>
+/// <summary>ABI-shaped 2D vector: the C ABI's <c>CNA_Vector2</c>.</summary>
 [StructLayout(LayoutKind.Sequential)]
 internal readonly struct CnaVector2
 {
@@ -17,7 +17,7 @@ internal readonly struct CnaVector2
     }
 }
 
-/// <summary>ABI-shaped RGBA color, one byte per channel. See analysis_binding.md §8.</summary>
+/// <summary>ABI-shaped RGBA color, one byte per channel: the C ABI's <c>CNA_Color</c>.</summary>
 [StructLayout(LayoutKind.Sequential)]
 internal readonly struct CnaColor
 {
@@ -251,9 +251,8 @@ internal readonly struct CnaGamePadCapabilities
     }
 }
 
-/// <summary>ABI-shaped integer rectangle (pixel-space source/destination rects). Not named in the
-/// analysis docs as its own struct, but implied by the <c>source</c> field of the
-/// <c>CNA_SpriteDrawCommand</c> example in analysis_binding.md §22.</summary>
+/// <summary>ABI-shaped integer rectangle (pixel-space source/destination rects): the C ABI's
+/// <c>CNA_Rectangle</c>.</summary>
 [StructLayout(LayoutKind.Sequential)]
 internal readonly struct CnaRect
 {

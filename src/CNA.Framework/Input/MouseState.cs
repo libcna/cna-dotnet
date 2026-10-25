@@ -3,7 +3,7 @@ using CNA.Interop;
 namespace CNA.Input;
 
 /// <summary>A mouse snapshot taken by <see cref="Mouse.GetState"/>. See the "input as snapshots"
-/// guidance in openeggbert/cna's analysis_binding.md §25.</summary>
+/// guidance in libcna/cna's docs/binding.md and docs/c-api/INPUT_SNAPSHOTS.md.</summary>
 public readonly struct MouseState
 {
     private readonly CnaMouseState _native;

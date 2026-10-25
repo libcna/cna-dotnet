@@ -8,7 +8,8 @@ namespace CNA.Content;
 
 /// <summary>
 /// The native C ABI cannot expose C# generics directly, so <see cref="Load{T}"/> dispatches by
-/// runtime type -- see openeggbert/cna's analysis_binding.md §26. CNA.XnaCompat's
+/// runtime type -- see libcna/cna's docs/binding.md, "Generic APIs dispatch in the language".
+/// CNA.XnaCompat's
 /// <c>ContentManager</c> overrides this same method to additionally recognize its own compat
 /// content types, reusing <see cref="LoadNativeTexture2DHandle"/> so it never has to touch
 /// CNA.Interop directly (see docs/architecture.md).

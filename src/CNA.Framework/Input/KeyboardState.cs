@@ -5,7 +5,7 @@ namespace CNA.Input;
 /// <summary>
 /// A full-keyboard snapshot taken by <see cref="Keyboard.GetState()"/>. One native call per
 /// snapshot, then every <see cref="IsKeyDown"/> check is local -- see the "input as snapshots"
-/// guidance in openeggbert/cna's analysis_binding.md §25.
+/// guidance in libcna/cna's docs/binding.md and docs/c-api/INPUT_SNAPSHOTS.md.
 /// </summary>
 public readonly struct KeyboardState
 {

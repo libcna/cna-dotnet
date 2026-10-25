@@ -1,10 +1,10 @@
 # Architecture
 
-This document summarizes the architecture defined by
-`libcna/cna`'s `analysis_binding.md` and
-`libcna/cna`'s `analysis_binding_sharp_runtime.md`, as applied to this
-repository specifically. Read those two documents for the full reasoning;
-this page is the "what it means for the code in `src/`" version.
+This document summarizes the binding architecture in `libcna/cna`'s
+`docs/binding.md` (the design and its reasoning) and `docs/c-api/` (the ABI
+contract), as applied to this repository specifically. Read those for the
+full reasoning; this page is the "what it means for the code in `src/`"
+version.
 
 ## Layers
 
@@ -26,7 +26,7 @@ Sharp Runtime, CNA subsystems, renderers
 
 **Project name and C# namespace are deliberately different for the idiomatic
 layer.** The project is called `CNA.Framework` (matching the repository
-layout `analysis_binding.md` §18 prescribes: `src/CNA.Interop/`,
+layout `docs/binding.md` (*CNA.NET*) describes: `src/CNA.Interop/`,
 `src/CNA.Framework/`, `src/CNA.XnaCompat/`), but the types inside it live in
 the bare `CNA` namespace (`CNA.Graphics`, `CNA.Input`, `CNA.Content`, or
 just `CNA` for core types like `Vector2`/`Game`) — matching the *real* CNA
@@ -60,17 +60,18 @@ namespace differ). This is where:
 
 - managed value types (`Vector2`, `Color`, `GameTime`) are implemented
   directly in C#, with no P/Invoke call for trivial operations
-  (`analysis_binding.md` §23);
+  (`docs/binding.md`, *Value types live in the language*);
 - native-backed resources (`Texture2D`, `SpriteBatch`, `GraphicsDevice`) wrap
   a `SafeHandle` and convert `CnaResult` failures into `CnaException`
-  (`analysis_binding.md` §24, §10);
+  (`docs/binding.md`, *Resource lifetime* and *Errors*);
 - the `Game` lifecycle bridges to native code through an
-  `[UnmanagedCallersOnly]` callback adapter (`analysis_binding.md` §20).
+  `[UnmanagedCallersOnly]` callback adapter (`docs/binding.md`, *The game
+  loop is native; the game is callbacks*).
 
 The `CNA` namespace is intentionally not required to look like XNA. It is
 free to grow CNA-specific functionality that XNA never had, without that
 functionality being permanently constrained by 2010-era XNA naming
-(`analysis_binding.md` §18).
+(`docs/binding.md`, *CNA.NET*).
 
 ### `CNA.XnaCompat` (project) → `Microsoft.Xna.Framework` namespace
 
@@ -129,9 +130,10 @@ helpers translate to and from the `CNA` implementation at delegation boundaries.
 are deliberately not public operators: Microsoft XNA did not expose conversions to `CNA.*`, and
 doing so formerly added 120 strict metadata/leak findings. This is intentional, documented small
 duplication — see
-`analysis_binding.md` §74 ("simple value structs" and "repetitive resource
-wrappers" are exactly the kind of thing a future codegen tool
-(`tools/binding-generator/`) should generate instead of hand-writing).
+`docs/binding.md`, *What to generate and what to design* ("plain value
+structs" and "repetitive resource-wrapper boilerplate" are exactly the kind
+of thing a future codegen tool (`tools/binding-generator/`) should generate
+instead of hand-writing).
 
 ## The C ABI is not part of this repository
 
@@ -139,8 +141,9 @@ The CNA C ABI — `CNA_Result`, opaque generation-checked handles, UTF-8
 string conventions, struct versioning, ABI version checks — is designed and
 implemented in `libcna/cna` (`modules/c-api/`), not here. This
 repository only *consumes* that ABI from `CNA.Interop`. See
-`analysis_binding.md` §3–§16 for the ABI design itself; this repository
-treats it as an external contract, not something to redesign locally.
+`docs/binding.md` (*The boundary rules*) and `docs/c-api/` for the ABI design
+itself; this repository treats it as an external contract, not something to
+redesign locally.
 
 Consumption is nevertheless governed locally by the versioned
 [`cna-cs-native-abi/1`](native-abi-compatibility.md) policy. CNA 0.x minors are reviewed ABI
@@ -170,7 +173,7 @@ Concretely, this means:
 
 - `CNA.Interop` never references, includes, or links Sharp Runtime headers
   or libraries. It only talks to CNA's stable C ABI, which itself hides
-  Sharp Runtime (`analysis_binding_sharp_runtime.md` §7).
+  Sharp Runtime (`docs/c-api/SHARP_RUNTIME_BOUNDARY.md`).
 - Native strings cross the ABI as UTF-8 (`byte*` + length), not as any
   `System::String`-shaped object; `CNA.Interop`/`CNA.Framework` convert
   to/from `System.String` at the boundary.
@@ -186,8 +189,8 @@ Concretely, this means:
 If a change in this repository seems to require binding directly to Sharp
 Runtime, that is a sign the design has gone wrong somewhere upstream in the
 C ABI, not a reason to add a Sharp Runtime reference here. See
-`analysis_binding_sharp_runtime.md` §31 ("Why wrapping Sharp Runtime
-directly would be a mistake") before doing so.
+`docs/binding.md`, *Sharp Runtime stays on the native side* ("Why wrapping
+Sharp Runtime would be a mistake") before doing so.
 
 ## Native resource lifetime
 

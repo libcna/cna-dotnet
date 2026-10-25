@@ -5,7 +5,8 @@ This directory records a tooling idea, not an unfinished XNA compatibility featu
 and the broad compatibility campaign is now bounded. No generator is planned merely to replace
 working hand-written code.
 
-Per `libcna/cna`'s `analysis_binding.md` §74, automation is a good fit for:
+Per `libcna/cna`'s `docs/binding.md` (*What to generate and what to design*), automation is a
+good fit for:
 
 - raw FFI declarations,
 - enum mappings (see the two parallel `Keys` enums this would remove),

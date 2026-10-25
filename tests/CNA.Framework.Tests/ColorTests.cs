@@ -17,7 +17,7 @@ public class ColorTests
     public void CornflowerBlue_MatchesRealXnaValue()
     {
         // The one XNA color every sample checks -- see samples/HelloGame/Game1.cs and
-        // openeggbert/cna's analysis_binding.md's HelloGame examples throughout.
+        // the first program in libcna/cna's docs/binding.md.
         var color = Color.CornflowerBlue;
 
         Assert.Equal(100, color.R);
