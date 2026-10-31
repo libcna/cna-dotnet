@@ -1,4 +1,10 @@
-AI must not be used to generate code for contributions to this project.
+# AI Contribution Policy (v2)
+
+AI must not be used to modify anything in this project for contributions.
+This includes source code, tests, build scripts, configuration files, 
+documentation, examples, HTML, CSS, JavaScript, and other web-related content,
+images, artwork, audio, models, and other project assets, commit messages, 
+pull request descriptions, issue reports, and anything remaining in this project.
 
 "AI" in this case means a Large Language Model ("LLM"), such as ChatGPT,
 Claude, Copilot, Grok, etc.
@@ -7,8 +13,10 @@ AI-generated code is based upon sources of unknown origins and may not be
 compatible with the licenses applicable to this project, or may introduce 
 conflicting license terms if it includes code from other projects.
 
-AI can be used to identify issues with contributions to this project, but the
-solutions to those issues should be authored by humans.
+AI can be used to identify issues with contributions to this project, 
+explain existing code and documentation and architecture, research technologies 
+and standards and APIs and external documentation.
+But the solutions to contributions in this project must be authored by humans.
 
 We have found that AI will frequently hallucinate issues that are not actually
 problems in practice, report incorrect information, and describe problems that
