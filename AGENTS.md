@@ -1,3 +1,5 @@
+The following AI policy is valid since 1st December 2026. Before this day this policy has no effect.
+
 # AI Contribution Policy (v2)
 
 AI must not be used to modify anything in this project for contributions.
