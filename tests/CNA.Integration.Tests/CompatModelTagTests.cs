@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -71,7 +72,7 @@ public class CompatModelTagTests
         {
             File.WriteAllBytes(Path.Combine(root, "tagged.xnb"), ModelWithElevationTag(1234));
             using var game = new ModelProbe(root);
-            game.RunOneFrame();
+            game.RunFrameEXT();
 
             Assert.Null(game.Failure);
             Model model = Assert.IsType<Model>(game.Loaded);
@@ -94,7 +95,7 @@ public class CompatModelTagTests
         {
             File.WriteAllBytes(Path.Combine(root, "tagged.xnb"), ModelWithPickingTag());
             using var game = new ModelProbe(root);
-            game.RunOneFrame();
+            game.RunFrameEXT();
 
             Assert.Null(game.Failure);
             Model model = Assert.IsType<Model>(game.Loaded);

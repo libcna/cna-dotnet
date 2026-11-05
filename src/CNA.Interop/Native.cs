@@ -85,12 +85,8 @@ internal static partial class Native
     internal static partial CnaResult cna_game_run(CnaHandle game);
 
 
-    /// <summary>Steps exactly one native frame instead of blocking until exit -- a distinct real
-    /// function <see cref="cna_game_run"/> wraps, with no equivalent in the old guessed API.
-    /// Unused today (<c>Game.Run()</c> only calls <see cref="cna_game_run"/>); declared here since
-    /// it is part of the real, confirmed ABI surface, matching this file's existing practice of
-    /// declaring functions ahead of a managed caller that uses them (see the audio/media sections
-    /// below).</summary>
+    /// <summary>Ticks once without initializing, loading content or beginning a run, as XNA's
+    /// RunOneFrame does. Use cna_game_run_frame_ext for a complete host-driven run.</summary>
     [LibraryImport(LibraryName)]
     internal static partial CnaResult cna_game_run_one_frame(CnaHandle game);
 

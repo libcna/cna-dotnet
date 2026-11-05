@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Globalization;
 using System.Resources;
 using System.Text;
@@ -125,7 +126,7 @@ public class CompatResourceContentTests
     private static void RunInAFrame(Action<XnaGame> body)
     {
         using var game = new FrameProbe(body);
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.True(game.Ran, "The frame never ran, so nothing was exercised.");
         if (game.Failure is { } failure)

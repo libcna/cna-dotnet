@@ -1,3 +1,6 @@
+#if CNA_HOST_DRIVEN_FRAMES
+using CNA.XnaCompat.Extensions;
+#endif
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -20,7 +23,11 @@ internal static class Program
         {
             for (int frame = 0; frame < 4 && !game.Ran; frame++)
             {
+#if CNA_HOST_DRIVEN_FRAMES
+                game.RunFrameEXT();
+#else
                 game.RunOneFrame();
+#endif
             }
 
             if (game.Failure is not null)

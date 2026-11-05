@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using Microsoft.Devices;
 using Microsoft.Devices.Sensors;
 using Xunit;
@@ -123,7 +124,7 @@ public class PhoneCompatTests(ITestOutputHelper output)
         public void Inside(Action body)
         {
             _body = body;
-            RunOneFrame();
+            this.RunFrameEXT();
             if (_failure is { } failure)
             {
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();

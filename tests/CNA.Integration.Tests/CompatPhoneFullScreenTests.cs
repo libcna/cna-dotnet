@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Reflection;
 using Microsoft.Xna.Framework;
 using Xunit;
@@ -42,7 +43,7 @@ public class CompatPhoneFullScreenTests
     public void PhoneTitle_OnADesktop_KeepsIsFullScreenWithoutAFullScreenDevice()
     {
         using var game = new PhoneTitle("WindowsPhone.v4.0.Reach");
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.True(game.Graphics.IsFullScreen);
         Assert.False(game.PresentedFullScreen);

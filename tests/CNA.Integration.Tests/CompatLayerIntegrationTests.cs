@@ -110,7 +110,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
 
         for (int i = 0; i < 4 && !game.Ran; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         if (game.Failure is { } failure)
@@ -153,7 +153,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
     {
         using var game = new FacadeGroupProbe();
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.True(game.Updated);
         Assert.Same(
@@ -182,7 +182,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
     {
         using var game = new FacadeGroupProbe();
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         CnaPresentationMode initial = game.Manager.GetCnaPreferredPresentationMode();
         output.WriteLine($"initial mode: {initial}");
@@ -556,6 +556,24 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
             game.Order);
     }
 
+    [global::CNA.Integration.Tests.NativeFact]
+    public void CompatGame_RunFrameEXTDeliversLifecycleAndStopsAfterExit()
+    {
+        using var game = new LifecycleOrderGame();
+        bool running = true;
+        for (int frame = 0; frame < 5 && running; frame++)
+        {
+            running = game.RunFrameEXT();
+        }
+
+        Assert.False(running);
+        Assert.Equal(
+            ["Initialize", "LoadContent", "BeginRun", "Update", "Exiting", "EndRun"],
+            game.Order);
+        Assert.False(game.RunFrameEXT());
+        Assert.Equal(1, game.Order.Count(phase => phase == "Update"));
+    }
+
     /// <summary>
     /// XNA's <c>Dispose(true)</c> raises <c>Disposed</c>, once. No game's did: the native event that
     /// was meant to carry it is raised inside <c>cna_game_destroy</c>, after the game has released
@@ -572,7 +590,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
             disposed++;
         };
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
         game.Dispose();
         game.Dispose();
 
@@ -1154,7 +1172,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
             // need a window to be about.
             Assert.Null(game.FormInConstructor);
             Assert.Null(System.Windows.Forms.Control.FromHandle(game.Window.Handle));
-            game.RunOneFrame();
+            game.RunFrameEXT();
             return;
         }
         Assert.NotNull(game.FormInConstructor);
@@ -1168,7 +1186,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
         game.FormInConstructor.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
         Assert.Equal(System.Windows.Forms.FormBorderStyle.Sizable, game.FormInConstructor.FormBorderStyle);
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
     }
 
     [Fact]
@@ -1247,7 +1265,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
         Assert.True(game.AdapterCount > 0);
         Assert.True(game.ModeInConstructor.Width > 0 && game.ModeInConstructor.Height > 0);
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.NotNull(game.ModeInUpdate);
         Assert.NotNull(game.GraphicsDevice);
@@ -1271,7 +1289,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
         Assert.Equal(320, game.ViewportInConstructor.Width);
         Assert.Equal(240, game.ViewportInConstructor.Height);
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.Same(game.DeviceInConstructor, game.DeviceInUpdate);
         Assert.Equal(240, game.ViewportInUpdate.Height);
@@ -1293,7 +1311,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
     public void CompatGame_ClearColorWithTheDefaultDepthFormatOnAnyRenderer()
     {
         using var game = new DefaultDepthClearGame();
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         output.WriteLine(
             $"{game.RendererName}: depth plane {game.HasDepthPlane}, format {game.Format}");
@@ -1318,7 +1336,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
         Assert.Empty(game.KeyboardBeforeConstructor.GetPressedKeys());
         Assert.False(game.PadBeforeConstructor.IsConnected);
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.True(game.ReadInputInUpdate);
     }
@@ -1370,7 +1388,7 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
                 System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo(culture);
                 System.Globalization.CultureInfo.DefaultThreadCurrentCulture = null;
                 using var game = new NumberPrintingGame();
-                game.RunOneFrame();
+                game.RunFrameEXT();
                 if (culture == "en-US")
                 {
                     // CSX-139: Windows' en-US long time had a space before AM/PM; ICU's has U+202F.

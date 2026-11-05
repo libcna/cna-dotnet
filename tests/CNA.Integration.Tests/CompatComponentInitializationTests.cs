@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -82,7 +83,7 @@ public class CompatComponentInitializationTests
         using var game = new ComponentOrderProbe();
         for (int i = 0; i < 5; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         // Inside base.Initialize(), as XNA's Game.Initialize does it (IL): initialized, and the

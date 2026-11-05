@@ -115,12 +115,12 @@ public sealed unsafe class NetworkSession : IDisposable
 
     public bool IsEveryoneReady => ReadFlag(Native.cna_network_session_get_is_everyone_ready, nameof(IsEveryoneReady));
 
-    public NetworkGamer Host
+    public NetworkGamer? Host
     {
         get
         {
             GamerServicesInterop.Check(Native.cna_network_session_get_host(Handle, out CnaHandle host), nameof(Host));
-            return TakeView(host)!;
+            return TakeView(host);
         }
     }
 
@@ -452,7 +452,7 @@ public sealed unsafe class NetworkSession : IDisposable
     {
         ArgumentNullException.ThrowIfNull(gamer);
         GamerServicesInterop.Check(Native.cna_network_session_add_local_gamer(Handle, gamer.Handle), nameof(AddLocalGamer));
-        RefreshRosters();
+        // Native adds the gamer and raises GamerJoined on the next Update.
     }
 
     public void Dispose()
@@ -517,7 +517,7 @@ public sealed unsafe class NetworkSession : IDisposable
         {
             if (_scratchReader.IsNull)
             {
-                GamerServicesInterop.Check(Native.cna_packet_reader_create(0, out _scratchReader), nameof(LocalNetworkGamer.ReceiveData));
+                GamerServicesInterop.Check(Native.cna_packet_reader_create(1, out _scratchReader), nameof(LocalNetworkGamer.ReceiveData));
             }
 
             return _scratchReader;
@@ -771,7 +771,7 @@ public sealed unsafe class NetworkSession : IDisposable
             CnaHandle oldHost = info->OldHost;
             CnaHandle newHost = info->NewHost;
             target.Raise(() => target.HostChanged?.Invoke(
-                target, new HostChangedEventArgs(target.Resolve(oldHost)!, target.Resolve(newHost)!)));
+                target, new HostChangedEventArgs(target.Resolve(oldHost), target.Resolve(newHost)!)));
         }
     }
 

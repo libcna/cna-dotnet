@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Text;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -59,7 +60,7 @@ public class CompatWindowAndAudioContentTests
     {
         using var game = new TitleProbe();
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.False(
             string.IsNullOrEmpty(game.TitleSeenInInitialize),
@@ -77,7 +78,7 @@ public class CompatWindowAndAudioContentTests
     {
         using var game = new TitleProbe("Chosen By The Game");
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.Equal("Chosen By The Game", game.TitleSeenInInitialize);
         Assert.Equal("Chosen By The Game", game.TitleAfterAFrame);
@@ -242,7 +243,7 @@ public class CompatWindowAndAudioContentTests
     private static void RunInAFrame(Action<SoundProbe> body)
     {
         using var game = new SoundProbe(body);
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         Assert.True(game.Ran, "The frame never ran, so nothing was exercised.");
         if (game.Failure is { } failure)

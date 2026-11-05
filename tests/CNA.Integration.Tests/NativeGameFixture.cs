@@ -39,7 +39,7 @@ public sealed class NativeGameFixture : IDisposable
 
         // One frame up front so Initialize and LoadContent have run and a GraphicsDevice exists
         // before any test body asks for one.
-        _game.RunOneFrame();
+        _game.RunFrameEXT();
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public sealed class NativeGameFixture : IDisposable
 
         for (int i = 0; i < 4 && !_game.Ran; i++)
         {
-            _game.RunOneFrame();
+            _game.RunFrameEXT();
         }
 
         LastFrameUpdateCount = _game.Updates;

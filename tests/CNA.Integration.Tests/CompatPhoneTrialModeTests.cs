@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Reflection;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.GamerServices;
@@ -58,7 +59,7 @@ public class CompatPhoneTrialModeTests
         try
         {
             using var game = new Title(runtimeProfileLine, simulate);
-            game.RunOneFrame();
+            game.RunFrameEXT();
             return game.TrialModeInInitialize;
         }
         finally

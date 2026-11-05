@@ -572,8 +572,11 @@ public class Game : IDisposable
     /// <summary>Whether this game's browser run is still live.</summary>
     internal bool IsRunningInBrowser => OperatingSystem.IsBrowser() && BrowserGameLoop.IsRunning(this);
 
-    /// <summary>One frame of the browser's run; false once the run has ended.</summary>
-    internal bool RunFrame()
+    /// <summary>
+    /// Advances a host-driven run by one frame. The first call initializes the game, loads content
+    /// and calls BeginRun. After Exit, ends the run and returns false; later calls do nothing.
+    /// </summary>
+    public bool RunFrameEXT()
     {
         NativeResourceHandle.DrainPendingReleasesForCurrentThread();
         CnaResult result = Native.cna_game_run_frame_ext(_nativeHandle, out byte running);
@@ -701,9 +704,8 @@ public class Game : IDisposable
         return result;
     }
 
-    /// <summary>Runs a single frame -- update and draw -- without entering the loop. Matches real
-    /// XNA's <c>RunOneFrame</c>, and is what a host driving the game itself uses alongside
-    /// <see cref="Tick"/>.</summary>
+    /// <summary>Ticks a single frame without initializing the game, loading content or calling
+    /// BeginRun, as XNA does. Use <see cref="RunFrameEXT"/> to initialize and drive a run.</summary>
     public void RunOneFrame() => Invoke(Native.cna_game_run_one_frame, nameof(RunOneFrame));
 
     public void Exit()

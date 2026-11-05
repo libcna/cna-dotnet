@@ -89,7 +89,8 @@ public sealed unsafe class LocalNetworkGamer : NetworkGamer
         ArgumentNullException.ThrowIfNull(data);
         fixed (byte* bytes = data.ByteArray)
         {
-            Send(Native.cna_local_network_gamer_send_data(Handle, bytes, (ulong)data.Length, (uint)options));
+            Send(Native.cna_local_network_gamer_send_data_range(
+                Handle, bytes, (ulong)data.ByteArray.Length, 0, data.Length, (uint)options));
         }
 
         data.Clear();
@@ -101,7 +102,8 @@ public sealed unsafe class LocalNetworkGamer : NetworkGamer
         ArgumentNullException.ThrowIfNull(recipient);
         fixed (byte* bytes = data.ByteArray)
         {
-            Send(Native.cna_local_network_gamer_send_data_to(Handle, bytes, (ulong)data.Length, (uint)options, recipient.Handle));
+            Send(Native.cna_local_network_gamer_send_data_range_to(
+                Handle, bytes, (ulong)data.ByteArray.Length, 0, data.Length, (uint)options, recipient.Handle));
         }
 
         data.Clear();
@@ -151,8 +153,6 @@ public sealed unsafe class LocalNetworkGamer : NetworkGamer
         GamerServicesInterop.Check(
             Native.cna_local_network_gamer_receive_data_into_packet_reader(Handle, reader, out CnaHandle from, out ulong received),
             nameof(ReceiveData));
-        sender = Session.TakeSender(from);
-
         byte[] packet = received == 0 ? [] : new byte[received];
         fixed (byte* bytes = packet)
         {
@@ -162,6 +162,14 @@ public sealed unsafe class LocalNetworkGamer : NetworkGamer
             data.SetPacket(packet, (int)copied);
         }
 
+        // XNA resizes first, then reads through the managed reader's allocated buffer. A
+        // never-allocated reader refuses an empty queue even though the shared scratch has space.
+        if (received == 0 && ((MemoryStream)data.BaseStream).Capacity == 0)
+        {
+            throw new ArgumentOutOfRangeException("offset");
+        }
+
+        sender = Session.TakeSender(from);
         return (int)received;
     }
 

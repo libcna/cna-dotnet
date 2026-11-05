@@ -11,6 +11,10 @@
     <FnaFrameworkPath Condition="'$(FnaFrameworkPath)' == '' and '$(FNA_FRAMEWORK_PATH)' != ''">$(FNA_FRAMEWORK_PATH)</FnaFrameworkPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(CompatibilityTarget)' == 'CNA'">
+    <DefineConstants>$(DefineConstants);CNA_HOST_DRIVEN_FRAMES</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(CompatibilityTarget)' == 'CNA'">
     <ProjectReference Include="..\..\src\CNA.XnaCompat\CNA.XnaCompat.csproj" />
   </ItemGroup>

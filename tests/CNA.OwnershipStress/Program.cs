@@ -45,7 +45,7 @@ internal static class Program
                 {
                     for (int frame = 0; frame < 4 && !game.Ran; frame++)
                     {
-                        game.RunOneFrame();
+                        game.RunFrameEXT();
                     }
 
                     if (!game.Ran)

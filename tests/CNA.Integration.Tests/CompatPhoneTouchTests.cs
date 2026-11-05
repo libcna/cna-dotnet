@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Reflection;
 using Microsoft.Xna.Framework;
 using Xunit;
@@ -50,12 +51,12 @@ public class CompatPhoneTouchTests
         {
             using (var windows = new Probe(phoneTitle: false))
             {
-                windows.RunOneFrame();
+                windows.RunFrameEXT();
                 Assert.False(windows.Emulated);
             }
 
             using var phone = new Probe(phoneTitle: true) { Restore = true };
-            phone.RunOneFrame();
+            phone.RunFrameEXT();
             Assert.True(phone.Emulated);
         }
         finally

@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -37,7 +38,7 @@ public class CompatStockEffectReaderTests(ITestOutputHelper output)
         using var game = new HolderProbe(BuildAsset());
         for (int frame = 0; frame < 4 && !game.Ran; frame++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         Assert.True(game.Ran, "The frame never ran, so nothing was exercised.");

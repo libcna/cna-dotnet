@@ -100,7 +100,7 @@ internal static partial class BrowserGameLoop
         bool running = false;
         try
         {
-            running = game.RunFrame();
+            running = game.RunFrameEXT();
             return running;
         }
         finally

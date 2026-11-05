@@ -1,3 +1,5 @@
+using System.Reflection;
+using CNA.Interop;
 using CNA.Integration.Tests;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.GamerServices;
@@ -149,10 +151,121 @@ public class NetTests(GamerServicesGameFixture fixture, ITestOutputHelper output
             local.SendData(new byte[] { 1, 2, 3 }, SendDataOptions.Reliable);
             session.Update();
             Assert.False(local.IsDataAvailable);
-            var reader = new PacketReader();
+            var reader = new PacketReader(1);
             Assert.Equal(0, local.ReceiveData(reader, out NetworkGamer sender));
             Assert.Null(sender);
             Assert.Equal(0, reader.Length);
+        });
+    }
+
+    [NativeFact]
+    public void LocalHostLeaving_ClearsHostAndRaisesGamerLeftBeforeSessionEnded()
+    {
+        fixture.InsideAFrame(game =>
+        {
+            using NetworkSession session = NetworkSession.Create(NetworkSessionType.Local, 1, 4);
+            LocalNetworkGamer local = session.LocalGamers[0];
+            var events = new List<string>();
+            session.GamerLeft += (_, args) =>
+            {
+                Assert.Same(local, args.Gamer);
+                Assert.IsType<LocalNetworkGamer>(args.Gamer);
+                Assert.True(args.Gamer.HasLeftSession);
+                Assert.Null(session.Host);
+                events.Add("left");
+            };
+            session.SessionEnded += (_, _) => events.Add("ended");
+
+            // Removal is a native transport extension, rather than a public XNA facade member.
+            var handle = (CnaHandle)typeof(NetworkSession)
+                .GetProperty("Handle", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(session)!;
+            Assert.True(Native.cna_network_session_get_gamer(handle, 1, 0, out CnaHandle view).IsSuccess());
+            try
+            {
+                Assert.True(Native.cna_network_session_remove_gamer_ext(
+                    handle, view, (uint)NetworkSessionEndReason.RemovedByHost).IsSuccess());
+                Assert.Null(session.Host);
+                Assert.Empty(events);
+                session.Update();
+                Assert.Equal(["left", "ended"], events);
+                Assert.Empty((IEnumerable<LocalNetworkGamer>)session.LocalGamers);
+                Assert.Same(local, Assert.Single<NetworkGamer>(session.PreviousGamers));
+            }
+            finally
+            {
+                Assert.True(Native.cna_network_gamer_destroy(view).IsSuccess());
+            }
+        });
+    }
+
+    [NativeFact]
+    public void PacketWriter_SendDistinguishesUnallocatedAndEmptiedBuffers()
+    {
+        fixture.InsideAFrame(game =>
+        {
+            using NetworkSession session = NetworkSession.Create(NetworkSessionType.Local, 1, 4);
+            LocalNetworkGamer local = session.LocalGamers[0];
+            using var fresh = new PacketWriter();
+            using var allocated = new PacketWriter(16);
+            Assert.Equal("offset", Assert.Throws<ArgumentOutOfRangeException>(
+                () => local.SendData(fresh, SendDataOptions.Reliable)).ParamName);
+            Assert.Equal("offset", Assert.Throws<ArgumentOutOfRangeException>(
+                () => local.SendData(fresh, SendDataOptions.Reliable, local)).ParamName);
+            Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(
+                () => local.SendData(allocated, SendDataOptions.Reliable)).ParamName);
+            Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(
+                () => local.SendData(allocated, SendDataOptions.Reliable, local)).ParamName);
+
+            foreach (bool directed in new[] { false, true })
+            {
+                using var writer = new PacketWriter();
+                writer.Write(42);
+                writer.Position = 0; // Length, rather than Position, determines what is sent.
+                if (directed)
+                    local.SendData(writer, SendDataOptions.Reliable, local);
+                else
+                    local.SendData(writer, SendDataOptions.Reliable);
+                Assert.Equal(0, writer.Length);
+                Assert.Equal(0, writer.Position);
+                Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(
+                    () => local.SendData(writer, SendDataOptions.Reliable)).ParamName);
+                Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(
+                    () => local.SendData(writer, SendDataOptions.Reliable, local)).ParamName);
+                Assert.Equal("recipient", Assert.Throws<ArgumentNullException>(
+                    () => local.SendData(writer, SendDataOptions.Reliable, null!)).ParamName);
+            }
+        });
+    }
+
+    [NativeFact]
+    public void PacketReader_EmptyQueueChecksTheManagedBufferCapacity()
+    {
+        fixture.InsideAFrame(game =>
+        {
+            using NetworkSession session = NetworkSession.Create(NetworkSessionType.Local, 1, 4);
+            LocalNetworkGamer local = session.LocalGamers[0];
+            using var fresh = new PacketReader();
+            Assert.Equal("offset", Assert.Throws<ArgumentOutOfRangeException>(
+                () => local.ReceiveData(fresh, out _)).ParamName);
+
+            using var allocated = new PacketReader(16);
+            allocated.Position = 5;
+            Assert.Equal(0, local.ReceiveData(allocated, out NetworkGamer sender));
+            Assert.Null(sender);
+            Assert.Equal(0, allocated.Length);
+            Assert.Equal(0, allocated.Position);
+
+            using var reused = new PacketReader();
+            reused.SetPacketForTest([1, 2, 3]);
+            reused.Position = 2;
+            Assert.Equal(0, local.ReceiveData(reused, out sender));
+            Assert.Null(sender);
+            Assert.Equal(0, reused.Length);
+            Assert.Equal(0, reused.Position);
+
+            // The allocated scratch must not mask a still-unallocated managed reader.
+            Assert.Equal("offset", Assert.Throws<ArgumentOutOfRangeException>(
+                () => local.ReceiveData(fresh, out _)).ParamName);
         });
     }
 

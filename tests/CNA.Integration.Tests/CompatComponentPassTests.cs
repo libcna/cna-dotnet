@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using Microsoft.Xna.Framework;
 using Xunit;
 using XnaGame = Microsoft.Xna.Framework.Game;
@@ -71,7 +72,7 @@ public class CompatComponentPassTests
         using var game = new PassProbe(callBaseUpdate: true);
         for (int i = 0; i < 5; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         Assert.NotEmpty(game.UpdateCalls);
@@ -89,7 +90,7 @@ public class CompatComponentPassTests
         using var game = new PassProbe(callBaseUpdate: false);
         for (int i = 0; i < 5; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         // XNA would not update them at all; CNA's own pass keeps the lenience CNA.NET had.

@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Xna.Framework.Content;
@@ -178,7 +179,7 @@ if (load)
     ];
 
     using var survey = new CnaDotnet.ContentSurvey.LoadingSurvey(directory, loadable);
-    survey.RunOneFrame();
+    survey.RunFrameEXT();
 
     Console.WriteLine($"CONTENT_LOAD_ATTEMPTED={loadable.Count}");
     Console.WriteLine($"CONTENT_LOAD_LOADED={survey.Loaded.Count}");

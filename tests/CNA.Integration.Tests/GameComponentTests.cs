@@ -20,7 +20,7 @@ public class GameComponentTests(ITestOutputHelper output)
 
         // The game's own exception, not a CnaException wrapping its message: in XNA it unwinds out
         // of the call that drives the frame.
-        var thrown = Assert.Throws<InvalidOperationException>(game.RunOneFrame);
+        var thrown = Assert.Throws<InvalidOperationException>(() => { game.RunFrameEXT(); });
         Assert.Equal("update-failure", thrown.Message);
         Assert.Equal(0, game.BufferNeededEvents);
     }
@@ -40,7 +40,7 @@ public class GameComponentTests(ITestOutputHelper output)
         {
             for (int i = 0; i < 4; i++)
             {
-                game.RunOneFrame();
+                game.RunFrameEXT();
             }
         });
         Assert.Equal("component-update-failure", thrown.Message);
@@ -56,13 +56,13 @@ public class GameComponentTests(ITestOutputHelper output)
     public void ComponentInitializeException_SurfacesFromAdd()
     {
         using var game = new ComponentHost();
-        game.RunOneFrame();
+        game.RunFrameEXT();
 
         var thrown = Assert.Throws<ArithmeticException>(
             () => game.Components.Add(new ThrowingInitializeComponent(game)));
         Assert.Equal("component-initialize-failure", thrown.Message);
 
-        game.RunOneFrame();
+        game.RunFrameEXT();
     }
 
     private sealed class ThrowingInitializeComponent(CNA.Game game) : CNA.GameComponent(game)
@@ -115,7 +115,7 @@ public class GameComponentTests(ITestOutputHelper output)
 
         for (int i = 0; i < 6 && game.Component.Updates == 0; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         output.WriteLine(
@@ -140,7 +140,7 @@ public class GameComponentTests(ITestOutputHelper output)
 
         for (int i = 0; i < 4; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         DeviceComponent component = game.Component;

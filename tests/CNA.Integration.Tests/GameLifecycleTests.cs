@@ -147,8 +147,20 @@ public class GameLifecycleTests(ITestOutputHelper output)
         }
     }
 
+    [NativeFact]
+    public void Game_RunOneFrameTicksWithoutInitializing()
+    {
+        using var game = new ProbeGame(framesToRun: 10);
+        game.RunOneFrame();
+        Assert.Equal(0, game.Initializes);
+        Assert.Equal(0, game.LoadContents);
+        Assert.DoesNotContain("Initialize", game.Order);
+        Assert.DoesNotContain("LoadContent", game.Order);
+        Assert.True(game.Updates > 0);
+    }
+
     /// <summary>
-    /// The one that matters: a real game loop. <c>RunOneFrame</c> rather than <c>Run</c> so the
+    /// The one that matters: a real game loop. <c>RunFrameEXT</c> rather than <c>Run</c> so the
     /// test cannot hang if <c>Exit</c> is not honoured -- <c>Run</c> would block forever on a
     /// broken exit path, and a hung CI job is a much worse failure report than an assertion.
     /// </summary>
@@ -159,7 +171,7 @@ public class GameLifecycleTests(ITestOutputHelper output)
 
         for (int i = 0; i < 5 && game.Updates < 3; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         output.WriteLine("callback order: " + string.Join(" -> ", game.Order));
@@ -193,7 +205,7 @@ public class GameLifecycleTests(ITestOutputHelper output)
 
         for (int i = 0; i < 4 && game.Updates < 2; i++)
         {
-            game.RunOneFrame();
+            game.RunFrameEXT();
         }
 
         output.WriteLine("callback order: " + string.Join(" -> ", game.Order));

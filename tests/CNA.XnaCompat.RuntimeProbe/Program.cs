@@ -1,3 +1,6 @@
+#if CNA_HOST_DRIVEN_FRAMES
+using CNA.XnaCompat.Extensions;
+#endif
 using System.Globalization;
 using System.Reflection;
 using CNA.BehaviorProbes;
@@ -18,7 +21,11 @@ internal static class Program
         using var game = new ProbeGame();
         for (int frame = 0; frame < 8 && !game.Complete; frame++)
         {
+#if CNA_HOST_DRIVEN_FRAMES
+            game.RunFrameEXT();
+#else
             game.RunOneFrame();
+#endif
         }
 
         if (game.Failure is not null)

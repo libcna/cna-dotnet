@@ -1,3 +1,4 @@
+using CNA.XnaCompat.Extensions;
 using CNA.Integration.Tests;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.GamerServices;
@@ -31,7 +32,7 @@ public sealed class GamerServicesGameFixture : IDisposable
         _game = new HostGame();
         for (int frame = 0; frame < 30 && Gamer.SignedInGamers.Count == 0; frame++)
         {
-            _game.RunOneFrame();
+            _game.RunFrameEXT();
         }
     }
 
@@ -45,7 +46,7 @@ public sealed class GamerServicesGameFixture : IDisposable
         Assert.NotNull(_game);
         _game!.Pending = body;
         _game.Failure = null;
-        _game.RunOneFrame();
+        _game.RunFrameEXT();
         if (_game.Failure is { } failure)
         {
             throw new Xunit.Sdk.XunitException($"The body threw inside the frame: {failure}");
@@ -56,7 +57,7 @@ public sealed class GamerServicesGameFixture : IDisposable
     {
         for (int frame = 0; frame < count; frame++)
         {
-            _game!.RunOneFrame();
+            _game!.RunFrameEXT();
         }
     }
 

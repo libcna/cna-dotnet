@@ -158,6 +158,7 @@ public class Game : IDisposable
         }
     }
 
+    /// <summary>Ticks once without initializing the game, as XNA does.</summary>
     public void RunOneFrame() => _backend.RunOneFrame();
 
     public void Exit() => _backend.Exit();
