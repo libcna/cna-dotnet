@@ -151,12 +151,9 @@ public class VideoPlayer : IDisposable
     }
 
     /// <summary>
-    /// The current frame, or <see langword="null"/> when none is available yet (before playback
-    /// starts, or between decoded frames). The C API reports availability as a separate flag from
-    /// the handle precisely so this case is distinguishable, so this returns <see langword="null"/>
-    /// rather than throwing -- real XNA instead throws <c>InvalidOperationException</c> when
-    /// stopped, but a null is the more useful shape for a per-frame draw loop and cannot be
-    /// mistaken for a valid texture.
+    /// The current frame, or <see langword="null"/> when an opened video has no frame available.
+    /// Reading before successful playback throws <see cref="InvalidOperationException"/>, as
+    /// XNA does. Stop retains the last decoded frame; it does not restore the pre-play state.
     ///
     /// The returned texture wraps a handle the *player* owns. The C API states it is "valid only
     /// until the next call on this player", so it must not be cached across frames -- and, more
@@ -176,7 +173,7 @@ public class VideoPlayer : IDisposable
     {
         CnaResult result = Native.cna_video_player_get_texture(NativeHandle, out CnaHandle texture, out byte available);
         GC.KeepAlive(this);
-        CnaException.ThrowIfFailed(result, nameof(GetTexture));
+        ThrowIfFrameReadFailed(result, nameof(GetTexture));
 
         // _video is non-null whenever native reports a frame: a frame only exists after Play(),
         // which is the only thing that sets it.
@@ -214,8 +211,22 @@ public class VideoPlayer : IDisposable
         var frame = CnaVideoFrameExt.Versioned();
         CnaResult result = Native.cna_video_player_get_frame_ext(NativeHandle, ref frame);
         GC.KeepAlive(this);
-        CnaException.ThrowIfFailed(result, nameof(ReadFrame));
+        ThrowIfFrameReadFailed(result, nameof(ReadFrame));
         return frame;
+    }
+
+    private static void ThrowIfFrameReadFailed(CnaResult result, string operation)
+    {
+        try
+        {
+            CnaException.ThrowIfFailed(result, operation);
+        }
+        catch (CnaException failure) when (failure.CanonicalExceptionType == "System.InvalidOperationException")
+        {
+            // Use the native exception identity, not every InvalidState result: other frame
+            // failures (including a released player token) retain their existing diagnostics.
+            throw new InvalidOperationException(failure.NativeMessage ?? failure.Message, failure);
+        }
     }
 
     /// <summary>Covariant-return factory hook so CNA.XnaCompat can hand back its own

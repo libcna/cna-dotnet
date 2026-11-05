@@ -38,15 +38,7 @@ public class EffectMaterial : StockEffect
         return effect;
     }
 
-    /// <summary>Adopts an already-created native effect -- the clone route's landing point. Private
-    /// because a caller has no way to obtain a bare handle; only <see cref="Clone"/> produces one.</summary>
-    private EffectMaterial(GraphicsDevice graphicsDevice, CnaHandle nativeHandle)
-        : base(graphicsDevice, nativeHandle)
-    {
-    }
-
-    /// <summary>An independent copy, matching real XNA. The native clone is documented to be "of
-    /// the same concrete native type", which is what makes rewrapping it as
-    /// <see cref="EffectMaterial"/> correct rather than a guess.</summary>
-    public override Effect Clone() => new EffectMaterial(GraphicsDevice, CloneNativeHandle());
+    /// <summary>ABI 0.60 documents EffectMaterial's inherited native base Effect clone.
+    /// Preserve its techniques/parameters without claiming the result is another material.</summary>
+    public override Effect Clone() => new Effect(GraphicsDevice, CloneNativeHandle().Value);
 }

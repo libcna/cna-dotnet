@@ -11,6 +11,44 @@ namespace CnaDotnet.GamerServices.IntegrationTests;
 public class GamerServicesTests(GamerServicesGameFixture fixture, ITestOutputHelper output)
 {
     [NativeFact]
+    public unsafe void NativeGamerCursor_NullCurrentAndMutationRefusalFollowAbi059()
+    {
+        fixture.InsideAFrame(_ =>
+        {
+            Assert.Equal(CnaResult.Success, Native.cna_friend_collection_create_ext(null, 0, out CnaHandle collection));
+            CnaHandle cursor = CnaHandle.Zero;
+            try
+            {
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_collection_create_enumerator(collection, out cursor));
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_enumerator_get_current(cursor, out CnaHandle current));
+                Assert.True(current.IsNull);
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_enumerator_move_next(cursor, out byte more));
+                Assert.Equal((byte)0, more);
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_enumerator_get_current(cursor, out current));
+                Assert.True(current.IsNull);
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_enumerator_reset(cursor));
+
+                // Even an empty Clear changes the collection version without changing its count.
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_collection_clear(collection));
+                more = 0xA5;
+                Assert.Equal(CnaResult.InvalidState, Native.cna_gamer_enumerator_move_next(cursor, out more));
+                Assert.Equal((byte)0xA5, more);
+                Assert.Equal(CnaResult.InvalidState, Native.cna_gamer_enumerator_reset(cursor));
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_enumerator_get_current(cursor, out current));
+                Assert.True(current.IsNull);
+            }
+            finally
+            {
+                if (!cursor.IsNull)
+                {
+                    Assert.Equal(CnaResult.Success, Native.cna_gamer_enumerator_destroy(cursor));
+                }
+                Assert.Equal(CnaResult.Success, Native.cna_gamer_collection_destroy(collection));
+            }
+        });
+    }
+
+    [NativeFact]
     public void Dispatcher_IsInitializedOnceByTheComponent()
     {
         fixture.InsideAFrame(game =>

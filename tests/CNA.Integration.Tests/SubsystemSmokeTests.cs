@@ -276,6 +276,18 @@ public class SubsystemSmokeTests(ITestOutputHelper output, NativeGameFixture fix
             Assert.Equal(1, kept);
             Assert.Equal(0, removed);
             Assert.Same(target, senderSeen);
+            Assert.True(target.IsContentLost);
+            game.GraphicsDevice.SetRenderTarget(target);
+            try
+            {
+                Assert.True(target.IsContentLost); // Binding alone must preserve the lost flag.
+                game.GraphicsDevice.Clear(Color.Black);
+                Assert.False(target.IsContentLost);
+            }
+            finally
+            {
+                game.GraphicsDevice.SetRenderTarget(null);
+            }
         });
     }
 
@@ -401,6 +413,53 @@ public class SubsystemSmokeTests(ITestOutputHelper output, NativeGameFixture fix
             Assert.NotNull(device.BlendState);
             Assert.NotNull(device.DepthStencilState);
             Assert.NotNull(device.RasterizerState);
+        });
+    }
+
+    [NativeFact]
+    public void TextureFromStream_ZeroAlphaClearsRgb()
+    {
+        fixture.InsideAFrameWithDevice(device =>
+        {
+            // Encoded RGBA pixel (17, 34, 51, 0), before the native stream correction.
+            using var png = new MemoryStream(Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMQVDJmAAABFQBnVPqQ/wAAAABJRU5ErkJggg=="));
+            using Texture2D texture = Texture2D.FromStream(device, png);
+            var pixels = new Color[1];
+            texture.GetData(pixels);
+            Assert.Equal(new Color(0, 0, 0, 0), pixels[0]);
+        });
+    }
+
+    [NativeFact]
+    public void SoundEffectFromStream_UsesStrictWavAndPitchRefusesOutOfRange()
+    {
+        fixture.InsideAFrameWithDevice(_ =>
+        {
+            using var wav = new MemoryStream();
+            using (var writer = new BinaryWriter(wav, System.Text.Encoding.UTF8, leaveOpen: true))
+            {
+                writer.Write("RIFF"u8); writer.Write(836);
+                writer.Write("WAVEfmt "u8); writer.Write(16);
+                writer.Write((ushort)1); writer.Write((ushort)1);
+                writer.Write(8000); writer.Write(8000);
+                writer.Write((ushort)1); writer.Write((ushort)8);
+                writer.Write("data"u8); writer.Write(800);
+                writer.Write(Enumerable.Repeat((byte)128, 800).ToArray());
+            }
+            wav.Position = 0;
+            using var effect = SoundEffect.FromStream(wav);
+            Assert.Equal(TimeSpan.FromMilliseconds(100), effect.Duration);
+            using var instance = effect.CreateInstance();
+            instance.Pitch = 0.25f;
+            Assert.Equal("InvalidArgument", Assert.Throws<CnaException>(() => instance.Pitch = 2f).NativeResult);
+            Assert.Equal(0.25f, instance.Pitch);
+
+            byte[] invalid = wav.ToArray();
+            invalid[0] = (byte)'O'; // An encoded non-RIFF stream is not a supported format.
+            using var nonWav = new MemoryStream(invalid);
+            CnaException refusal = Assert.Throws<CnaException>(() => SoundEffect.FromStream(nonWav));
+            Assert.Contains(refusal.NativeResult, new[] { "InvalidArgument", "InvalidState" });
         });
     }
 

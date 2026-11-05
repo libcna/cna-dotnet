@@ -138,8 +138,9 @@ public class SoundEffect : IDisposable
     }
 
     /// <summary>
-    /// Matches real XNA's <c>SoundEffect.FromStream</c>: decodes an encoded audio stream (WAV, and
-    /// whatever else the backend supports) into a sound effect.
+    /// Matches real XNA's <c>SoundEffect.FromStream</c>: decodes a strict PCM WAV stream
+    /// (8/16-bit, mono/stereo, 8000-48000 Hz) into a sound effect. ABI 0.59 retired the
+    /// permissive decoder extension; other encoded formats are refused by the native parser.
     ///
     /// The whole stream is read into memory first, because
     /// <c>cna_sound_effect_create_from_encoded_ext</c> decodes from a contiguous block rather than

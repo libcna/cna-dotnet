@@ -145,27 +145,28 @@ run_reject()
   grep -Fq "$diagnostic" "$logs_root/$name.log"
 }
 
-compile_fixture exact-0.47.0 -DCNA_ABI_FIXTURE_VERSION=0x00002F00U
-compile_fixture exact-0.47.0-extra-symbol -DCNA_ABI_FIXTURE_VERSION=0x00002F00U \
+compile_fixture exact-0.60.0 -DCNA_ABI_FIXTURE_VERSION=0x00003C00U
+compile_fixture exact-0.60.0-extra-symbol -DCNA_ABI_FIXTURE_VERSION=0x00003C00U \
   -DCNA_ABI_FIXTURE_EXTRA_SYMBOL
 compile_fixture retired-0.8.0 -DCNA_ABI_FIXTURE_VERSION=0x00000800U
 compile_fixture retired-0.21.0 -DCNA_ABI_FIXTURE_VERSION=0x00001500U
 compile_fixture retired-0.44.0 -DCNA_ABI_FIXTURE_VERSION=0x00002C00U
 compile_fixture skipped-0.45.0 -DCNA_ABI_FIXTURE_VERSION=0x00002D00U
 compile_fixture retired-0.46.0 -DCNA_ABI_FIXTURE_VERSION=0x00002E00U
-compile_fixture unreviewed-0.48.0 -DCNA_ABI_FIXTURE_VERSION=0x00003000U
-compile_fixture missing-required-symbol -DCNA_ABI_FIXTURE_VERSION=0x00002F00U \
+compile_fixture retired-0.47.0 -DCNA_ABI_FIXTURE_VERSION=0x00002F00U
+compile_fixture unreviewed-0.61.0 -DCNA_ABI_FIXTURE_VERSION=0x00003D00U
+compile_fixture missing-required-symbol -DCNA_ABI_FIXTURE_VERSION=0x00003C00U \
   -DCNA_ABI_FIXTURE_MISSING_REQUIRED_SYMBOL
-compile_fixture changed-required-signature -DCNA_ABI_FIXTURE_VERSION=0x00002F00U \
+compile_fixture changed-required-signature -DCNA_ABI_FIXTURE_VERSION=0x00003C00U \
   -DCNA_ABI_FIXTURE_CHANGED_SIGNATURE
 compile_fixture incompatible-major-1.0.0 -DCNA_ABI_FIXTURE_VERSION=0x00010000U
-compile_fixture structurally-incompatible-0.47.0 -DCNA_ABI_FIXTURE_VERSION=0x00002F00U \
+compile_fixture structurally-incompatible-0.60.0 -DCNA_ABI_FIXTURE_VERSION=0x00003C00U \
   -DCNA_ABI_FIXTURE_INCOMPATIBLE_STRUCT
 compile_fixture malformed-metadata-0.0.0 -DCNA_ABI_FIXTURE_VERSION=0x00000000U
 compile_fixture unreadable-metadata -DCNA_ABI_FIXTURE_UNREADABLE_METADATA
 
-run_accept exact-0.47.0
-run_accept exact-0.47.0-extra-symbol
+run_accept exact-0.60.0
+run_accept exact-0.60.0-extra-symbol
 # A generation this consumer used to accept long ago. It is refused on the version rule alone,
 # before the routes it does not export are ever looked for -- which is the point: retiring a matrix
 # entry has to be enforced, not merely written down.
@@ -178,15 +179,16 @@ run_reject retired-0.21.0 'experimental ABI 0.21.0 is not in the audited compati
 run_reject retired-0.44.0 'experimental ABI 0.44.0 is not in the audited compatibility matrix'
 # A generation this consumer crossed without ever admitting it.
 run_reject skipped-0.45.0 'experimental ABI 0.45.0 is not in the audited compatibility matrix'
-# 0.46.0 is the generation retired by this admission, the neighbour below. Every route this consumer
-# imports is 0.47.0's -- the step removed the modern GPU layer, which this consumer no longer names.
+# Older admissions remain refused even when their fixture exports every required route.
 run_reject retired-0.46.0 'experimental ABI 0.46.0 is not in the audited compatibility matrix'
+# The generation retired by this admission has every imported prototype, but older behavior.
+run_reject retired-0.47.0 'experimental ABI 0.47.0 is not in the audited compatibility matrix'
 # The neighbour above: newer is not evidence of anything while the major is zero.
-run_reject unreviewed-0.48.0 'experimental ABI 0.48.0 is not in the audited compatibility matrix'
+run_reject unreviewed-0.61.0 'experimental ABI 0.61.0 is not in the audited compatibility matrix'
 run_reject missing-required-symbol "required symbol 'cna_game_destroy' is missing"
 run_reject changed-required-signature "failed required signature/shape probe 'cna_error_get_last_message_size'"
 run_reject incompatible-major-1.0.0 'major 1 differs from consumer major 0'
-run_reject structurally-incompatible-0.47.0 "failed required signature/shape probe 'cna_touch_capabilities_init'"
+run_reject structurally-incompatible-0.60.0 "failed required signature/shape probe 'cna_touch_capabilities_init'"
 run_reject malformed-metadata-0.0.0 'metadata encodes 0.0.0'
 run_reject unreadable-metadata "required symbol 'cna_get_abi_version' is missing"
 
@@ -214,10 +216,10 @@ jq -n \
     schemaVersion: 1,
     policyVersion: "cna-cs-native-abi/1",
     status: "passed",
-    consumerAbi: "0.47.0",
+    consumerAbi: "0.60.0",
     requiredSymbolCount: $requiredSymbolCount,
-    accepted: ["exact-0.47.0", "exact-0.47.0-extra-symbol"],
-    rejected: ["retired-0.8.0", "retired-0.21.0", "retired-0.44.0", "skipped-0.45.0", "retired-0.46.0", "unreviewed-0.48.0", "missing-required-symbol", "changed-required-signature", "incompatible-major-1.0.0", "structurally-incompatible-0.47.0", "malformed-metadata-0.0.0", "unreadable-metadata"],
+    accepted: ["exact-0.60.0", "exact-0.60.0-extra-symbol"],
+    rejected: ["retired-0.8.0", "retired-0.21.0", "retired-0.44.0", "skipped-0.45.0", "retired-0.46.0", "retired-0.47.0", "unreviewed-0.61.0", "missing-required-symbol", "changed-required-signature", "incompatible-major-1.0.0", "structurally-incompatible-0.60.0", "malformed-metadata-0.0.0", "unreadable-metadata"],
     selectedNative: $selectedNative
   }' >"$output_root/abi-compatibility-report.json"
 
@@ -228,6 +230,6 @@ echo "CNA_ABI_POLICY=cna-cs-native-abi/1"
 # resolver -- they are handled specially by the fixture, not exempted -- so they are added back.
 echo "CNA_ABI_REQUIRED_SYMBOLS=$(( $(printf '%s\n' "$declared_symbols" | grep -c .) + 4 ))"
 echo "CNA_ABI_FIXTURES_ACCEPTED=2"
-echo "CNA_ABI_FIXTURES_REJECTED=12"
+echo "CNA_ABI_FIXTURES_REJECTED=13"
 echo "CNA_ABI_SELECTED_NATIVE=$selected_native_status"
 echo "CNA_ABI_COMPATIBILITY_STATUS=passed"

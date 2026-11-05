@@ -57,6 +57,13 @@ public class OcclusionQuery : IDisposable
     {
         get
         {
+            // Dispose releases the C token as well as the native GPU query. ABI 0.60/XNA
+            // define this one post-disposal answer as false; never query a released token.
+            if (_handle.IsClosed)
+            {
+                return false;
+            }
+
             CnaResult result = Native.cna_occlusion_query_get_is_complete(NativeHandle, out byte value);
             GC.KeepAlive(this);
             CnaException.ThrowIfFailed(result, nameof(IsComplete));

@@ -105,20 +105,22 @@ public class RemainingSurfaceTests(ITestOutputHelper output, NativeGameFixture f
         });
     }
 
-    /// <summary>An EffectMaterial wraps a cloned effect, which is a different construction path
-    /// from every other effect in the family.</summary>
     [NativeFact]
-    public void EffectMaterial_WrapsAClonedEffect()
+    public void EffectMaterial_PreservesParametersAndClonesAsBaseEffect()
     {
         fixture.InsideAFrameWithDevice(device =>
         {
             using var source = new BasicEffect(device);
+            source.Parameters["DiffuseColor"]!.SetValue(new Vector4(0.25f, 0.5f, 0.75f, 0.5f));
             using var material = new EffectMaterial(source);
-
-            material.Apply();
-
-            output.WriteLine($"{material.Parameters.Count} parameter(s), {material.Techniques.Count} technique(s)");
-            Assert.NotSame(source, material);
+            Assert.Equal(source.Techniques.Count, material.Techniques.Count);
+            Assert.Equal(source.Techniques[0].Name, material.Techniques[0].Name);
+            Assert.Equal(new Vector4(0.25f, 0.5f, 0.75f, 0.5f), material.Parameters["DiffuseColor"]!.GetValueVector4());
+            using Effect clone = material.Clone();
+            Assert.IsType<Effect>(clone);
+            Assert.Equal(material.Parameters["DiffuseColor"]!.GetValueVector4(), clone.Parameters["DiffuseColor"]!.GetValueVector4());
+            material.Parameters["DiffuseColor"]!.SetValue(Vector4.One);
+            Assert.Equal(new Vector4(0.25f, 0.5f, 0.75f, 0.5f), clone.Parameters["DiffuseColor"]!.GetValueVector4());
         });
     }
 

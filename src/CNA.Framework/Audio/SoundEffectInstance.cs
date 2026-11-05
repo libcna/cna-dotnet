@@ -98,9 +98,8 @@ public class SoundEffectInstance : IDisposable
         }
     }
 
-    /// <summary>Range [-1, 1] (one octave down to one octave up) -- the real ABI clamps this to
-    /// [-1, 1] itself (unlike <see cref="Volume"/>'s unclamped pass-through), confirmed directly
-    /// against <c>audio.h</c>'s own documented behavior for the getter.</summary>
+    /// <summary>Range [-1, 1] (one octave down to one octave up). Native CNA now refuses
+    /// nonfinite or out-of-range assignments instead of clamping them.</summary>
     public float Pitch
     {
         get => GetInfo().Pitch;

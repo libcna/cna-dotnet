@@ -27,6 +27,7 @@ namespace CNA.Integration.Tests;
 public sealed class NativeGameFixture : IDisposable
 {
     private readonly HostGame? _game;
+    private readonly CNA.GraphicsDeviceManager? _graphics;
 
     public NativeGameFixture()
     {
@@ -36,6 +37,9 @@ public sealed class NativeGameFixture : IDisposable
         }
 
         _game = new HostGame();
+        // DrawableGameComponent.Initialize requires IGraphicsDeviceService, as XNA does.
+        // Keep its manager alive for the entire shared game's lifetime.
+        _graphics = new CNA.GraphicsDeviceManager(_game);
 
         // One frame up front so Initialize and LoadContent have run and a GraphicsDevice exists
         // before any test body asks for one.
@@ -99,7 +103,17 @@ public sealed class NativeGameFixture : IDisposable
         InsideAFrame(game => body(game.GraphicsDevice));
     }
 
-    public void Dispose() => _game?.Dispose();
+    public void Dispose()
+    {
+        try
+        {
+            _graphics?.Dispose();
+        }
+        finally
+        {
+            _game?.Dispose();
+        }
+    }
 
     private sealed class HostGame : CNA.Game
     {

@@ -25,6 +25,7 @@ public class OcclusionQuery : GraphicsResource
             _query?.Dispose();
         }
 
-        base.Dispose(arg0);
+        // XNA Effect/OcclusionQuery suppress Disposing; ABI 0.60 does the same.
+        base.Dispose(false);
     }
 }

@@ -178,7 +178,7 @@ public class GraphicsDevice : IDisposable
 
     public Viewport Viewport
     {
-        get => Query(static device => Viewport.FromNative(device._framework.Viewport));
+        get => QueryLiveDevice(static device => Viewport.FromNative(device._framework.Viewport));
         set => _framework.Viewport = value.ToNative();
     }
 
@@ -189,9 +189,20 @@ public class GraphicsDevice : IDisposable
     /// <summary>A device query from another thread -- XNA's loading threads read the viewport and
     /// the presentation parameters -- runs on the game thread as one call: the device CNA lends
     /// lasts one callback scope, so resolving it and reading through it cannot be two queued calls
-    /// that a frame boundary might fall between (CSX-101).</summary>
+    /// that a frame boundary might fall between (CSX-101). Translate the captured native exception
+    /// identity after the call, including when the query ran on another thread.</summary>
     private T Query<T>(Func<GraphicsDevice, T> read) =>
-        CNA.GameThread.IsCurrent ? read(this) : CNA.GameThread.Invoke(read, this);
+        XnaExceptions.Guard(() =>
+            CNA.GameThread.IsCurrent ? read(this) : CNA.GameThread.Invoke(read, this));
+
+    private T QueryLiveDevice<T>(Func<GraphicsDevice, T> read)
+    {
+        // These native getters call ThrowIfDisposed. The C API refuses to dispose a game's
+        // borrowed device, so enforce explicit facade disposal here as well. Cached-state
+        // getters use Query directly and keep their native post-disposal read behavior.
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return Query(read);
+    }
 
     /// <summary>Overrides one field of the active blend state, so -- as in XNA -- assigning that
     /// same <see cref="BlendState"/> object again applies it again instead of being skipped.</summary>
@@ -455,7 +466,7 @@ public class GraphicsDevice : IDisposable
         get => Query(static device => new PresentationParameters(device._framework.PresentationParameters));
     }
 
-    public DisplayMode DisplayMode => Query(static device => DisplayMode.FromFramework(device._framework.DisplayMode));
+    public DisplayMode DisplayMode => QueryLiveDevice(static device => DisplayMode.FromFramework(device._framework.DisplayMode));
 
     public BlendState BlendState
     {
@@ -545,7 +556,7 @@ public class GraphicsDevice : IDisposable
     /// <summary>Re-typed because <c>Rectangle</c> is a separate struct per namespace.</summary>
     public Rectangle ScissorRectangle
     {
-        get => Query(static device => device._framework.ScissorRectangle.ToCompat());
+        get => QueryLiveDevice(static device => device._framework.ScissorRectangle.ToCompat());
         set => _framework.ScissorRectangle = value.ToFramework();
     }
 
@@ -596,7 +607,7 @@ public class GraphicsDevice : IDisposable
     }
 
     /// <summary>Re-typed: <c>GraphicsDeviceStatus</c> is a separate enum per namespace.</summary>
-    public GraphicsDeviceStatus GraphicsDeviceStatus => Query(static device => (GraphicsDeviceStatus)(int)device._framework.GraphicsDeviceStatus);
+    public GraphicsDeviceStatus GraphicsDeviceStatus => QueryLiveDevice(static device => (GraphicsDeviceStatus)(int)device._framework.GraphicsDeviceStatus);
 
     /// <summary>Re-typed: takes this namespace's own <see cref="PresentationParameters"/>.</summary>
     public void Reset(PresentationParameters presentationParameters)

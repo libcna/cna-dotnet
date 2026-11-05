@@ -24,12 +24,15 @@ It cannot express CNA's documented experimental-0.x exception by itself.
 
 | CNA.NET consumer | Native library | CNA.NET result | Evidence |
 | --- | --- | --- | --- |
-| 0.47.0 | 0.47.0 | Accept | Consumer baseline at CNA `next` `fbd8e64a3`. |
-| 0.47.0 | Any other 0.x | Reject | No audited matrix entry. |
-| 0.47.0 | Any 1.x+ | Reject | Different ABI major. |
+| 0.60.0 | 0.60.0 | Accept | CNA `next` `1fd900487`, reviewed from `fbd8e64a3`; [admission evidence](native-abi-0.60-review.md). |
+| 0.60.0 | Any other 0.x | Reject | No current audited matrix entry, including retired 0.47.0. |
+| 0.60.0 | Any 1.x+ | Reject | Different ABI major. |
 
-One accepted entry is not a simplification of the policy; it is what the policy produces when the
-consumer moves. There is no `>= 0.47` rule and there never was a `>= 0.6` one.
+Each admission replaces the previous point. There is no minimum-minor range. ABI 0.60.0
+preserves all 1419 imported prototypes and existing layouts, but changes behavior; 0.47.0 is
+retired. The transition's 26 unconsumed name/value differences are reviewed individually in
+`eng/cna-upstream-abi-allowlist.txt`. See the admission review for callback, ownership, error,
+behavior and validation details. Earlier admissions follow for historical context.
 
 0.47.0 replaced 0.46.0 on 2026-10-13 (CNA `plans/plan_modern_retirement.md` MRT-012). CNA 0.47.0
 removes its modern GPU layer: compute, storage buffers and images, indirect draws and GPU timers.
@@ -68,9 +71,9 @@ its device before its run, as XNA's `ApplyChanges` in a constructor created one)
 ## Which CNA this binding pairs with
 
 `CNA_UPSTREAM_COMMIT` in `.github/workflows/build.yml` is the one CNA commit this branch is written
-against: today CNA `next` at `fbd8e64a3`, C ABI 0.47.0. CNA's `main` and `develop` still carry 0.46.0
-(its v0.1.0 preparation), which this consumer refuses; `next` is CNA's integration branch, and the
-pin moves only with a reviewed matrix change. Every CI job that reads CNA reads that commit: the
+against: CNA `next` at `1fd900487`, C ABI 0.60.0. The pin moves only with a reviewed matrix
+change. Sibling dependency pins identify the local sources used with this generation.
+Every CI job that reads CNA reads that commit: the
 header gates (`tools/abi-verify`), the upstream diff, and `native-qualified-linux-x64`, which builds
 CNA's C API from it (OPENGLES3 with compiled effects, CNAEXT and devices on, siblings pinned beside
 it), installs the `CNACApi` component, admits that library with
@@ -80,7 +83,7 @@ involved, so a run that did not load the library fails rather than being skipped
 
 ### Retired entries
 
-0.6.0, 0.7.0, 0.8.0, 0.19.0, 0.20.0, 0.21.0, 0.35.0, 0.36.0, 0.37.0, 0.38.0, 0.39.0, 0.40.0, 0.41.0, 0.42.0, 0.43.0, 0.44.0 and 0.46.0 were accepted once. 0.6.0-0.8.0
+0.6.0, 0.7.0, 0.8.0, 0.19.0, 0.20.0, 0.21.0, 0.35.0, 0.36.0, 0.37.0, 0.38.0, 0.39.0, 0.40.0, 0.41.0, 0.42.0, 0.43.0, 0.44.0, 0.46.0 and 0.47.0 were accepted once. 0.6.0-0.8.0
 were retired when this binding began importing routes they do not export; 0.19.0, 0.20.0 and 0.21.0
 when the next reviewed generation superseded them; 0.35.0 when this binding began importing 0.36.0's
 `cna_packet_reader_copy_data_ext`, 0.36.0 when it began importing 0.37.0's exception queries,
@@ -93,7 +96,7 @@ game's device in its constructor once `ApplyChanges` has created it, which 0.41.
 when its activation handlers began using the device, which 0.43.0 refuses there. 0.44.0 and 0.46.0
 were retired when the next reviewed generation superseded them without changing an imported route.
 The retirements are enforced: `retired-0.8.0`, `retired-0.21.0`, `retired-0.44.0` and
-`retired-0.46.0` are refused.
+`retired-0.46.0` and `retired-0.47.0` are refused.
 
 Each retired fixture exports every route this binding imports and passes every runtime shape probe,
 so the version rule alone refuses it. The sharpest was `retired-0.39.0`: a real 0.39.0 library
@@ -283,7 +286,7 @@ An operation is compatible only when it preserves every contract an existing con
 - clarify documentation without changing ownership, error, threading, lifetime, or behavior.
 
 Additional exports are deliberately allowed by the loader. They cannot collide with or substitute
-for the 1409 names imported by this build.
+for the 1419 names imported by this build.
 
 ## Breaking operations
 
@@ -335,7 +338,7 @@ error, and lifetime rules are ABI contract just as much as its machine-level pro
 Before returning a library handle, the managed resolver now requires:
 
 1. readable `cna_get_abi_version` metadata and an exact reviewed matrix entry;
-2. every one of the 1416 `LibraryImport` entry points declared by `CNA.Interop.Native`;
+2. every one of the 1419 `LibraryImport` entry points declared by `CNA.Interop.Native`;
 3. a successful `cna_error_get_last_message_size` result/out-parameter signature canary;
 4. a successful guarded `cna_touch_capabilities_init` canary proving the 16-byte version-1 shape,
    canonical body, and write bounds.
@@ -356,16 +359,17 @@ a fresh managed process. The exact matrix is:
 
 | Fixture | Expected | Property proved |
 | --- | --- | --- |
-| `exact-0.44.0` | Accept | Exact expected ABI. |
-| `exact-0.44.0-extra-symbol` | Accept | Unrelated added exports do not break a consumer. |
+| `exact-0.60.0` | Accept | Exact expected ABI. |
+| `exact-0.60.0-extra-symbol` | Accept | Unrelated added exports do not break a consumer. |
 | `retired-0.8.0` | Reject | A generation retired because this consumer outgrew it. |
 | `retired-0.21.0` | Reject | A generation retired because a newer one superseded it -- being previously audited is not admission. It exports every required symbol and passes every shape probe, so the version rule alone refuses it. |
-| `retired-0.43.0` | Reject | The generation this admission retired, one below the accepted entry. |
-| `unreviewed-0.45.0` | Reject | Nor is being newer: the matrix is a point list, not a floor. |
+| `retired-0.44.0`, `skipped-0.45.0`, `retired-0.46.0` | Reject | Earlier reviewed/skipped generations remain refused. |
+| `retired-0.47.0` | Reject | The generation this admission retired, superseded by the accepted entry. |
+| `unreviewed-0.61.0` | Reject | Nor is being newer: the matrix is a point list, not a floor. |
 | `missing-required-symbol` | Reject | Any missing managed import fails at load, not at first use. |
 | `changed-required-signature` | Reject | A testable core signature/out-parameter change fails its canary. |
 | `incompatible-major-1.0.0` | Reject | Major mismatch. |
-| `structurally-incompatible-0.44.0` | Reject | An accepted version cannot override guarded shape evidence. |
+| `structurally-incompatible-0.60.0` | Reject | An accepted version cannot override guarded shape evidence. |
 | `malformed-metadata-0.0.0` | Reject | An incomplete/unrecognized encoded generation. |
 | `unreadable-metadata` | Reject | Missing version export. |
 

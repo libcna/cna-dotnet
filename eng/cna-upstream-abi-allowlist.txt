@@ -1,66 +1,37 @@
-# Reviewed upstream ABI differences, accepted by tools/coverage/baselinediff.py.
-#
-# An entry here is a difference someone looked at and decided this consumer does not care about.
-# It is not a way to quieten the tool: every entry must match an actual difference, and one that
-# stops matching fails the gate as stale rather than being ignored. An entry containing `*` is a
-# glob over one reviewed family and is held to the same rule.
-#
-# The file is scoped to the transition currently being admitted -- the accepted generation in
-# eng/cna-native-abi-policy.json against the one proposed to replace it -- because a finding is a
-# statement about one step and matches nothing in the next.
-#
-# 2026-10-13, ABI 0.46.0 (CNA a3da0a5bb) -> 0.47.0 (CNA next, the commit CNA_UPSTREAM_COMMIT in
-# .github/workflows/build.yml names), CNA plans/plan_modern_retirement.md MRT-008/MRT-012.
-# 1419 consumed exports, 0 absent, 0 changed prototype; 3210 -> 3205 exports; no scalar, string or
-# floating-constant difference. Every finding below belongs to the modern GPU layer CNA retired in
-# this generation, and none reaches this binding.
-#
-# - The three compute work-group queries and the two indirect-argument initializers were removed with
-#   the compute and indirect-draw paths. CNA.NET never imported any of them.
-export cna_graphics_device_get_max_compute_work_group_count_ext was removed upstream (not consumed here)
-export cna_graphics_device_get_max_compute_work_group_invocations_ext was removed upstream (not consumed here)
-export cna_graphics_device_get_max_compute_work_group_size_ext was removed upstream (not consumed here)
-export cna_indirect_draw_arguments_init was removed upstream (not consumed here)
-export cna_indirect_draw_indexed_arguments_init was removed upstream (not consumed here)
-# - The two indirect-argument structures went with their initializers. No managed layout mirrors them.
-struct CNA_IndirectDrawArguments was removed
-struct CNA_IndirectDrawIndexedArguments was removed
-# - Two graphics capabilities. CNA.NET named them as GraphicsCapability.ComputeShaders and
-#   IndirectDraw (and CnaGraphicsCapability's twins); those members are removed in the same change,
-#   so the managed enums now end where the native family does, at 16.
-integer constants: CNA_GRAPHICS_CAPABILITY_COMPUTE_SHADERS was removed
-integer constants: CNA_GRAPHICS_CAPABILITY_INDIRECT_DRAW was removed
-integer constants: CNA_GRAPHICS_CAPABILITY_MAXIMUM changed 18 -> 16
-# - Four renderer features and fourteen renderer limits of the retired layer. Their ordinals stay
-#   reserved and the query routes refuse them. CNA.NET does not bind the renderer feature or limit
-#   families at all.
-integer constants: CNA_RENDERER_FEATURE_COMPUTE_IMAGE_BINDING was removed
-integer constants: CNA_RENDERER_FEATURE_COMPUTE_SHADERS was removed
-integer constants: CNA_RENDERER_FEATURE_GPU_TIMERS was removed
-integer constants: CNA_RENDERER_FEATURE_INDIRECT_DRAWING was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_STORAGE_BUFFER_BINDINGS was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_COUNT_X was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_COUNT_Y was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_COUNT_Z was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_INVOCATIONS was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_SIZE_X was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_SIZE_Y was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_COMPUTE_WORK_GROUP_SIZE_Z was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_STORAGE_BUFFER_BYTES was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_STORAGE_IMAGES_PER_SHADER_STAGE was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_TEXTURE_ARRAY_LAYERS was removed
-integer constants: CNA_RENDERER_LIMIT_MAX_VERTEX_SHADER_STORAGE_BLOCKS was removed
-integer constants: CNA_RENDERER_LIMIT_MIN_STORAGE_BUFFER_OFFSET_ALIGNMENT was removed
-integer constants: CNA_RENDERER_LIMIT_TIMESTAMP_PERIOD_PICOSECONDS was removed
-integer constants: CNA_RENDERER_LIMIT_MAXIMUM changed 21 -> 20
-# - Their flag bits and the storage format usages. Until 2026-10-13 this tool could not see a value
-#   written `(UINT32_C(1) << n)`, because CNA's baseline did not record one (CNA CBIND-159), and these
-#   six were reviewed by hand; it now evaluates the headers of both generations. CNA.NET binds no
-#   capability flag and does not name the ALL mask; its two format-usage enums named the three storage
-#   bits and drop them in the same change, which tools/abi-verify confirms against the 0.47.0 headers.
-integer constants: CNA_GRAPHICS_CAPABILITY_FLAG_COMPUTE_SHADERS was removed
-integer constants: CNA_GRAPHICS_CAPABILITY_FLAG_INDIRECT_DRAW was removed
-integer constants: CNA_RENDERER_FORMAT_USAGE_STORAGE_READ was removed
-integer constants: CNA_RENDERER_FORMAT_USAGE_STORAGE_WRITE was removed
-integer constants: CNA_RENDERER_FORMAT_USAGE_STORAGE_ATOMIC was removed
-integer constants: CNA_RENDERER_FORMAT_USAGE_ALL changed 8191 -> 7967
+# Reviewed transition: CNA fbd8e64a3 (0.47.0) -> 1fd900487 (0.60.0), 2026-11-05.
+# Each entry must match an actual finding; stale entries fail the gate.
+# No imported route was removed or changed. No existing POD layout changed.
+# ABI 0.49 renames eight backend classification routes and two typedefs to renderer:
+# none is imported or mirrored by CNA.NET. Their replacement constants keep values 0..4.
+# ABI 0.48 retires SDL_RENDERER(1), VULKAN(8), DIRECTX11(14), METAL(42), reserving
+# their ordinals; CNA.NET exposes none of these renderer identities.
+# ABI 0.51 renames SDL_GPU to SDLGPU, preserving 31; CNA.NET uses neither constant.
+# Renderer feature MAXIMUM moves 31 -> 36 with five added features; no managed
+# renderer-feature enum/sentinel is consumed. The layout/constant compiler verifies
+# every identity this consumer does name. See docs/native-abi-0.60-review.md.
+export cna_graphics_backend_category_copy_name was removed upstream (not consumed here)
+export cna_graphics_backend_category_get_name_size was removed upstream (not consumed here)
+export cna_graphics_backend_get_category was removed upstream (not consumed here)
+export cna_graphics_backend_get_current_category was removed upstream (not consumed here)
+export cna_graphics_backend_get_current_maturity was removed upstream (not consumed here)
+export cna_graphics_backend_get_maturity was removed upstream (not consumed here)
+export cna_graphics_backend_maturity_copy_name was removed upstream (not consumed here)
+export cna_graphics_backend_maturity_get_name_size was removed upstream (not consumed here)
+scalars: CNA_GraphicsBackendCategory was removed
+scalars: CNA_GraphicsBackendMaturity was removed
+integer constants: CNA_GRAPHICS_BACKEND_CATEGORY_DIAGNOSTIC was removed
+integer constants: CNA_GRAPHICS_BACKEND_CATEGORY_NATIVE was removed
+integer constants: CNA_GRAPHICS_BACKEND_CATEGORY_SOFTWARE was removed
+integer constants: CNA_GRAPHICS_BACKEND_CATEGORY_TRANSLATION_LAYER was removed
+integer constants: CNA_GRAPHICS_BACKEND_CATEGORY_WEB was removed
+integer constants: CNA_GRAPHICS_BACKEND_MATURITY_DEPRECATED was removed
+integer constants: CNA_GRAPHICS_BACKEND_MATURITY_EXPERIMENTAL was removed
+integer constants: CNA_GRAPHICS_BACKEND_MATURITY_HISTORICAL was removed
+integer constants: CNA_GRAPHICS_BACKEND_MATURITY_PRODUCTION was removed
+integer constants: CNA_GRAPHICS_BACKEND_MATURITY_SUPPORTED was removed
+integer constants: CNA_GRAPHICS_RENDERER_DIRECTX11 was removed
+integer constants: CNA_GRAPHICS_RENDERER_METAL was removed
+integer constants: CNA_GRAPHICS_RENDERER_SDL_GPU was removed
+integer constants: CNA_GRAPHICS_RENDERER_SDL_RENDERER was removed
+integer constants: CNA_GRAPHICS_RENDERER_VULKAN was removed
+integer constants: CNA_RENDERER_FEATURE_MAXIMUM changed 31 -> 36

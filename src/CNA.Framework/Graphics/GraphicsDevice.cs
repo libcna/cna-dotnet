@@ -173,6 +173,7 @@ public class GraphicsDevice : IDisposable
     /// own.</summary>
     internal CnaHandle ResolveNativeDeviceHandle()
     {
+        ObjectDisposedException.ThrowIf(_retiredByManager, this);
         // A caller-owned device has no game to resolve through, and its handle does not expire at a
         // callback boundary -- that lifetime rule is a property of the borrow, not of devices.
         if (_ownedDevice is { } owned)
@@ -397,6 +398,11 @@ public class GraphicsDevice : IDisposable
     {
         get
         {
+            if (_retiredByManager)
+            {
+                return true;
+            }
+
             CnaResult result = Native.cna_graphics_device_get_is_disposed(ResolveNativeDeviceHandle(), out byte disposed);
             CnaException.ThrowIfFailed(result, nameof(IsDisposed));
             return disposed != 0;
@@ -1410,5 +1416,15 @@ public class GraphicsDevice : IDisposable
         }
     }
 
+    // Native device loans are renewed per call. Once the manager replaces the device, an old
+    // managed wrapper must not renew its loan against the replacement.
+    internal void RetireFromManager()
+    {
+        _retiredByManager = true;
+        _deviceDisposed = true;
+        ReleaseEventSubscriptions();
+    }
+
+    private bool _retiredByManager;
     private bool _deviceDisposed;
 }

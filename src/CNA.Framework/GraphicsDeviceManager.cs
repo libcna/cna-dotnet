@@ -55,6 +55,10 @@ public class GraphicsDeviceManager : IGraphicsDeviceService, IGraphicsDeviceMana
         // it here keeps the managed service container agreeing with native rather than being a
         // second, separate registry.
         game.Services.AddService(typeof(IGraphicsDeviceService), this);
+        // ABI 0.60 replaces the device on profile changes and repeated CreateDevice calls.
+        // Track identity before forwarding events to clients, even if none subscribe themselves.
+        DeviceDisposing += (_, _) => game.RetireGraphicsDevice();
+        DeviceCreated += (_, _) => game.EnsureGraphicsDevice();
     }
 
     public Game Game { get; }
@@ -552,6 +556,7 @@ public class GraphicsDeviceManager : IGraphicsDeviceService, IGraphicsDeviceMana
         }
 
         _handle.Dispose();
+        Game.RetireGraphicsDevice();
 
         if (pending is not null)
         {

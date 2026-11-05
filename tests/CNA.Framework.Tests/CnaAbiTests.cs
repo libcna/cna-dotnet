@@ -33,33 +33,13 @@ public class CnaAbiTests
     }
 
     /// <summary>
-    /// The constant this binding compares against must be the version it was written for, now
-    /// 0.47.0, which removes CNA's modern GPU layer and changes no imported route; 0.46.0 before it
-    /// was the generation the macOS runtime qualification ran against (it crossed the
-    /// never-admitted 0.45.0; the step only retired renderer constants and added UIKit's
-    /// window-system value); 0.44.0 before it let activation handlers use the device, as XNA's
-    /// OnActivated could; 0.43.0
-    /// before it played sound effects from any thread, as XNA's did; 0.42.0 before it lent a game's
-    /// device before its run, as XNA's ApplyChanges in a constructor created one; 0.41.0 before it ran other threads' queued calls while the game thread waits for
-    /// them, as XNA's loading screens need; 0.40.0 before it let the adapter routes take the game's own handle, as
-    /// XNA's constructors need; 0.39.0 before it ran other threads' calls on the game thread; 0.38.0 before it added the
-    /// host-driven run a browser's Game.Run needs, and 0.37.0 before that named the
-    /// canonical exception behind a failure, and 0.36.0 before that added the
-    /// packet-reader copy XNA's managed PacketReader receives through. Before that it was 0.35.0, reached by dropping the 44 engine-layer imports CNA removed in
-    /// 0.30.0 and re-measuring every remaining one, and before that 0.21.0. It sat at 0.6.0 through the generations that only added routes this binding did not
-    /// call; it moved to 0.19.0 when the binding started importing routes CNA introduced after
-    /// 0.8.0 -- the render-target ContentLost pair, the two optioned raw vertex uploads, the
-    /// caller-owned device pair and the engine-layer availability pair -- to 0.20.0 with the
-    /// renderer removal, and to 0.21.0 with the device-type query and the object-dictionary
-    /// runtime-type-name pair.
-    ///
-    /// Updating this alongside the constant is the point: a constant that drifts silently would
-    /// make the compatibility check pass against a library it should reject.
+    /// The constant and reviewed point matrix advance together; ABI 0.60.0 changes behavior
+    /// despite preserving every imported prototype and existing layout.
     /// </summary>
     [Fact]
     public void ExpectedVersion_IsTheAbiThisBindingWasWrittenAgainst()
     {
-        Assert.Equal((0, 47, 0), CnaAbi.Decode(CnaAbi.ExpectedVersion));
+        Assert.Equal((0, 60, 0), CnaAbi.Decode(CnaAbi.ExpectedVersion));
     }
 
     /// <summary>Round-trips every field independently, so a mask that swallowed a neighbouring
@@ -73,7 +53,7 @@ public class CnaAbiTests
     }
 
     [Theory]
-    [InlineData(0, 47, 0, "exact")]
+    [InlineData(0, 60, 0, "exact")]
     public void Policy_AcceptsOnlyReviewedAbiGenerations(int major, int minor, int patch, string classification)
     {
         uint version = ((uint)major << 16) | ((uint)minor << 8) | (uint)patch;
@@ -82,16 +62,8 @@ public class CnaAbiTests
     }
 
     /// <summary>
-    /// 0.6.0 through 0.46.0 are here rather than in the accepting theory above because they were
-    /// retired, not because they were never reviewed; 0.45.0 was never admitted at all. 0.46.0 and
-    /// 0.48.0 sit on either side of the accepted entry to keep the matrix a point list -- being
-    /// newer than an audited generation is not evidence about an experimental 0.x ABI, and neither
-    /// is having been audited once.
-    ///
-    /// 0.21.0 is the sharpest of them for removed routes: every route this binding still imports
-    /// existed there with the same prototype except 0.36.0's packet-reader copy, so the version
-    /// rule is what refuses it. A policy expressed as "whatever exports what we call" would admit
-    /// a 0.35.0 library that happened to carry that one route.
+    /// Previously accepted generations remain rejected. Immediate neighbors and an unreviewed
+    /// patch keep the matrix a point list, even when all required symbols and shapes match.
     /// </summary>
     [Theory]
     [InlineData(0, 0, 0)]
@@ -114,7 +86,11 @@ public class CnaAbiTests
     [InlineData(0, 44, 0)]
     [InlineData(0, 45, 0)]
     [InlineData(0, 46, 0)]
+    [InlineData(0, 47, 0)]
     [InlineData(0, 47, 1)]
+    [InlineData(0, 59, 0)]
+    [InlineData(0, 60, 1)]
+    [InlineData(0, 61, 0)]
     [InlineData(0, 48, 0)]
     [InlineData(1, 0, 0)]
     public void Policy_RejectsUnauditedVersions(int major, int minor, int patch)
@@ -165,7 +141,7 @@ public class CnaAbiTests
         JsonElement root = document.RootElement;
 
         Assert.Equal(CnaNativeAbiPolicy.PolicyVersion, root.GetProperty("policyVersion").GetString());
-        Assert.Equal("0.47.0", root.GetProperty("consumerAbi").GetString());
+        Assert.Equal("0.60.0", root.GetProperty("consumerAbi").GetString());
         JsonElement[] entries = root.GetProperty("acceptedVersions").EnumerateArray().ToArray();
         string[] versions = entries.Select(item => item.GetProperty("libraryAbi").GetString()!).ToArray();
         Assert.Equal(
@@ -174,7 +150,7 @@ public class CnaAbiTests
         Assert.Equal(
             CnaNativeAbiPolicy.AcceptedProfiles.Select(profile => profile.Compatibility),
             entries.Select(item => item.GetProperty("classification").GetString()));
-        Assert.Equal(14, root.GetProperty("fixtures").GetArrayLength());
+        Assert.Equal(15, root.GetProperty("fixtures").GetArrayLength());
     }
 
     private static string Format(uint version)

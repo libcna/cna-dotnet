@@ -49,8 +49,8 @@ finding, never a skip. `python3 tools/coverage/test_baselinediff.py` holds those
 `upstream-abi-diff` CI job runs it before the diff.
 
 Reviewed differences go in `eng/cna-upstream-abi-allowlist.txt`, one exact finding per line with a
-`#` comment recording the decision -- today, the modern GPU layer CNA retired in 0.47.0, none of
-which this binding consumes. The allowlist is checked in
+`#` comment recording the decision -- currently the renderer classification renames, retired
+renderer names and unused feature sentinel in the 0.47.0 -> 0.60.0 transition. The allowlist is checked in
 both directions: an entry that matches nothing is reported as stale and fails, because a reviewed
 exception that has quietly stopped applying is how an allowlist becomes a blindfold. That was
 verified by planting an entry naming a constant that never existed.

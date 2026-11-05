@@ -137,6 +137,7 @@ public class GameComponentTests(ITestOutputHelper output)
     public void DrawableComponent_UsesGraphicsDeviceFromGameDrivenCallbacks()
     {
         using var game = new DeviceComponentHost();
+        using var graphics = new CNA.GraphicsDeviceManager(game);
 
         for (int i = 0; i < 4; i++)
         {

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>
       GamerServices and Guide against the real native library, in a process of their own: the
       dispatcher is process-wide and initializes once, as in an XNA process, so these tests share one

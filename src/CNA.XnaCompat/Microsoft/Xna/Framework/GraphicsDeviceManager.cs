@@ -215,11 +215,8 @@ public class GraphicsDeviceManager : Graphics.IGraphicsDeviceService, IGraphicsD
 
         _disposed = true;
         _backend.Dispose();
-        if (ReferenceEquals(Game.Services.GetService(typeof(IGraphicsDeviceManager)), this))
-        {
-            Game.Services.RemoveService(typeof(IGraphicsDeviceManager));
-        }
-
+        // ABI 0.60/XNA retain IGraphicsDeviceManager until game teardown. Only the
+        // graphics-device service is removed by explicit manager disposal.
         if (ReferenceEquals(Game.Services.GetService(typeof(Graphics.IGraphicsDeviceService)), this))
         {
             Game.Services.RemoveService(typeof(Graphics.IGraphicsDeviceService));

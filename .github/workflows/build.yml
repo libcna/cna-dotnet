@@ -12,22 +12,17 @@ permissions:
 env:
   DOTNET_NOLOGO: "1"
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-  # The CNA generation this binding is written against: ABI 0.47.0, the generation that retires CNA's
-  # modern GPU layer (CNA plans/plan_modern_retirement.md MRT-012), on CNA's `next` branch -- its
-  # integration branch; CNA `main` and `develop` still carry 0.46.0, which this binding refuses. Pin
-  # it. A branch moves, and a header tree ahead of the reviewed matrix fails the ABI gates by design
-  # -- which is the gates working, and not something to fix by tracking the branch. Every job that
-  # reads CNA reads this commit, and native-qualified-linux-x64 builds its library from it.
-  CNA_UPSTREAM_COMMIT: fbd8e64a3fde18beeb2861d546a279d90d0ed5bc
-  # The generation the reviewed matrix accepted immediately before this one (0.46.0). The upstream
-  # diff gate measures forward from here, which is what the ABI policy asks for.
-  CNA_PREVIOUS_ACCEPTED_COMMIT: a3da0a5bbd58698d69b015ab4f79e647c4664eb7
+  # Reviewed ABI 0.60.0, including the TQ behavior corrections. See the admission review.
+  # All header and native jobs use this exact generation, never a moving branch.
+  CNA_UPSTREAM_COMMIT: 1fd90048730cf7ec97676ae14d4322a9c3a1f0b9
+  # Baseline of the immediately preceding consumer admission (ABI 0.47.0).
+  CNA_PREVIOUS_ACCEPTED_COMMIT: fbd8e64a3fde18beeb2861d546a279d90d0ed5bc
   # The sibling checkouts CNA builds from (its ../sharp-runtime and ../easy-gl, and easy-gl's
   # ../meta-gl), pinned with it for native-qualified-linux-x64. CNA's configure refuses a sibling
   # whose declared version it does not support.
-  SHARP_RUNTIME_COMMIT: 7805c5dc695d8e84abd45168ab218793e10a4ad3
-  EASY_GL_COMMIT: f4d6afaf16cdc7e7e73130950bc45e6d865b41bd
-  META_GL_COMMIT: dd3b30055d55fdc42240de7af248259338256992
+  SHARP_RUNTIME_COMMIT: 3bf0e4077d682535178f055daee269c421db586c
+  EASY_GL_COMMIT: b582bd85f646678d1de38473160defed4729f323
+  META_GL_COMMIT: 795bcdcfe9e2c418ced189717d3699cbb0847cc0
   CNA_PACKAGE_VERSION: 0.1.0-ci.${{ github.run_number }}
 
 jobs:

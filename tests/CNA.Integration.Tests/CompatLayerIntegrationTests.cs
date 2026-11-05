@@ -763,6 +763,45 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
     }
 
     [global::CNA.Integration.Tests.NativeFact]
+    public void CompatEffect_DisposeDoesNotRaiseDisposing()
+    {
+        InsideACompatFrame(game =>
+        {
+            using var effect = new BasicEffect(game.GraphicsDevice);
+            int calls = 0;
+            effect.Disposing += (_, _) => calls++;
+            effect.Dispose();
+            effect.Dispose();
+            Assert.True(effect.IsDisposed);
+            Assert.Equal(0, calls);
+        });
+    }
+
+    [global::CNA.Integration.Tests.NativeFact]
+    public void CompatManager_CreateDeviceReplacesTheManagedDevice()
+    {
+        using var game = new XnaGame();
+        var manager = new GraphicsDeviceManager(game);
+        manager.ApplyChanges();
+        GraphicsDevice previous = manager.GraphicsDevice;
+        ((IGraphicsDeviceManager)manager).CreateDevice();
+        Assert.True(previous.IsDisposed);
+        Assert.NotSame(previous, manager.GraphicsDevice);
+        Assert.False(manager.GraphicsDevice.IsDisposed);
+        Assert.Throws<ObjectDisposedException>(() => previous.Clear(Color.Black));
+    }
+
+    [global::CNA.Integration.Tests.NativeFact]
+    public void CompatManager_DisposeRetainsManagerService()
+    {
+        using var game = new XnaGame();
+        var manager = new GraphicsDeviceManager(game);
+        ((IDisposable)manager).Dispose();
+        Assert.Same(manager, game.Services.GetService(typeof(IGraphicsDeviceManager)));
+        Assert.Null(game.Services.GetService(typeof(IGraphicsDeviceService)));
+    }
+
+    [global::CNA.Integration.Tests.NativeFact]
     public void CompatGraphicsResource_DisposingSeesDisposedStateAndFiresOnceAfterHandlerFailure()
     {
         InsideACompatFrame(_ =>
@@ -1277,8 +1316,8 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
     /// Kermit/SKraft calls <c>ApplyChanges</c> in its constructor and sizes its menu from
     /// <c>GraphicsDevice.Viewport</c> there (cna-cs CSX-121). XNA's ApplyChanges with no device
     /// creates one (IL: ChangeDevice(false) -> CreateDevice); native CNA lends it before the run
-    /// since C ABI 0.42.0. The run then goes on with that device: CNA's game owns one device, where
-    /// XNA's Run replaced the constructor's with a new one.
+    /// since C ABI 0.42.0. As in XNA, starting the run recreates the device; the constructor's
+    /// wrapper remains disposed and its native getter failures retain their managed identity.
     /// </summary>
     [global::CNA.Integration.Tests.NativeFact]
     public void CompatGame_ApplyChangesInItsConstructorCreatesTheDeviceItReads()
@@ -1291,8 +1330,40 @@ public class CompatLayerIntegrationTests(ITestOutputHelper output)
 
         game.RunFrameEXT();
 
-        Assert.Same(game.DeviceInConstructor, game.DeviceInUpdate);
+        Assert.NotSame(game.DeviceInConstructor, game.DeviceInUpdate);
+        Assert.True(game.DeviceInConstructor.IsDisposed);
+        Assert.Throws<ObjectDisposedException>(() => _ = game.DeviceInConstructor.Viewport);
+        Assert.Throws<ObjectDisposedException>(() => _ = game.DeviceInConstructor.DisplayMode);
         Assert.Equal(240, game.ViewportInUpdate.Height);
+    }
+
+    [global::CNA.Integration.Tests.NativeFact]
+    public void CompatGraphicsDevice_DisposedGettersFollowNativeContract()
+    {
+        // This host has no manager. C refuses to dispose its borrowed device, so the facade
+        // must enforce disposal for native ThrowIfDisposed getters, but preserve cached reads.
+        InsideACompatFrame(game =>
+        {
+            GraphicsDevice device = game.GraphicsDevice;
+            BlendState blend = device.BlendState;
+            GraphicsProfile profile = device.GraphicsProfile;
+            Color blendFactor = device.BlendFactor;
+            int sampleMask = device.MultiSampleMask;
+            int referenceStencil = device.ReferenceStencil;
+
+            device.Dispose();
+
+            Assert.True(device.IsDisposed);
+            Assert.Throws<ObjectDisposedException>(() => _ = device.Viewport);
+            Assert.Throws<ObjectDisposedException>(() => _ = device.DisplayMode);
+            Assert.Throws<ObjectDisposedException>(() => _ = device.ScissorRectangle);
+            Assert.Throws<ObjectDisposedException>(() => _ = device.GraphicsDeviceStatus);
+            Assert.Same(blend, device.BlendState);
+            Assert.Equal(profile, device.GraphicsProfile);
+            Assert.Equal(blendFactor, device.BlendFactor);
+            Assert.Equal(sampleMask, device.MultiSampleMask);
+            Assert.Equal(referenceStencil, device.ReferenceStencil);
+        });
     }
 
     /// <summary>

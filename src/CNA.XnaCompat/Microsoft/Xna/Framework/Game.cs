@@ -459,6 +459,8 @@ public class Game : IDisposable
             _compatGraphicsDevice = null;
         }
 
+        protected override void OnGraphicsDeviceRetired() => DisposeCompatGraphicsDevice();
+
         protected override CNA.Graphics.GraphicsDevice CreateGraphicsDevice() =>
             (_compatGraphicsDevice ??= new Graphics.GraphicsDevice(NativeHandle)).Framework;
 

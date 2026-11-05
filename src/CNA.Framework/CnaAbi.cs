@@ -15,7 +15,7 @@ public static class CnaAbi
 {
     /// <summary>
     /// The ABI this binding was written against
-    /// (<c>CNA_ABI_VERSION_MAJOR</c>/<c>_MINOR</c>/<c>_PATCH</c> = 0.6.0).
+    /// (<c>CNA_ABI_VERSION_MAJOR</c>/<c>_MINOR</c>/<c>_PATCH</c> = 0.60.0).
     ///
     /// 0.1.0 -> 0.2.0 was the content-reader registration, SpriteFont and launch-parameter routes.
     /// 0.3.0 -> 0.4.0 added the <c>.cnj</c> loader registration and 0.4.0 -> 0.5.0 the native-window

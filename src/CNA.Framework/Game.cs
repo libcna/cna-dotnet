@@ -24,7 +24,7 @@ namespace CNA;
 /// <see cref="ReportCallbackFailure"/>, which encodes it into <see cref="_callbackErrorBuffer"/>: a
 /// buffer allocated once, pinned for this <see cref="Game"/> instance's whole lifetime via
 /// <see cref="GC.AllocateArray{T}(int, bool)"/>. That pinning choice is deliberate, not incidental
-/// -- <c>CNA_CallbackError.message</c> is only guaranteed valid until the *callback* returns, but a
+/// -- <c>CNA_CallbackError.message</c> must stay valid through the dispatching C route, and a
 /// `fixed`-pinned pointer built inside a *callee* method (rather than the
 /// <c>UnmanagedCallersOnly</c> wrapper itself) stops being reachable the instant that callee
 /// returns, since nothing keeps the byte array rooted after its only reference (a local variable)
@@ -831,6 +831,23 @@ public class Game : IDisposable
         Content.GraphicsDevice = GraphicsDevice;
         _graphicsDeviceInitialized = true;
     }
+
+    internal void RetireGraphicsDevice()
+    {
+        if (!_graphicsDeviceInitialized)
+        {
+            return;
+        }
+
+        GraphicsDevice.RetireFromManager();
+        _graphicsDeviceInitialized = false;
+        GraphicsDevice = null!;
+        Content.GraphicsDevice = null;
+        OnGraphicsDeviceRetired();
+    }
+
+    /// <summary>Lets a facade retire its wrapper when the native manager replaces the device.</summary>
+    protected virtual void OnGraphicsDeviceRetired() { }
 
     public void Dispose()
     {

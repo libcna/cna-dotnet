@@ -66,7 +66,8 @@ public static class CnaVideoPlayerExtensions
     /// the same instant: the texture expires on the next call to the player, so asking separately
     /// would mean the generation could belong to a frame the caller no longer holds.
     /// </summary>
-    /// <exception cref="CnaException"><c>InvalidState</c> when the player is disposed.</exception>
+    /// <exception cref="InvalidOperationException">No video has successfully played.</exception>
+    /// <exception cref="CnaException">Other native frame-read failures, including a released player.</exception>
     public static CnaVideoFrame GetCnaFrame(this VideoPlayer player)
     {
         ArgumentNullException.ThrowIfNull(player);

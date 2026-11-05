@@ -268,10 +268,9 @@ public class Effect : IDisposable
     /// <summary>
     /// An independent copy of this effect, matching real XNA's <c>Effect.Clone</c>.
     ///
-    /// Abstract-by-default rather than implemented here: the ABI clones into "an owned clone of the
-    /// same concrete native type", so rewrapping the result needs to know which managed class to
-    /// build -- which only the concrete effect knows. Every effect this project ships overrides it.
-    /// The base throws rather than returning something of the wrong type.
+    /// Native chooses the clone's concrete type: stock effects preserve theirs, while
+    /// EffectMaterial inherits the base Effect clone. Derived wrappers select the corresponding
+    /// managed type; an unbacked effect must implement its own cloning.
     /// </summary>
     public virtual Effect Clone() =>
         _ownedHandle is not null

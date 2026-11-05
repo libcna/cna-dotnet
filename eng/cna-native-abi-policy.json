@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "policyVersion": "cna-cs-native-abi/1",
-  "consumerAbi": "0.47.0",
+  "consumerAbi": "0.60.0",
   "versionSemantics": {
     "major": "For ABI 1.x and later, a change permits breaks only at a new major. ABI 0 is experimental and does not provide this guarantee between minors.",
     "minorBefore1": "A reviewed ABI generation that may be additive or incompatible; never accepted as a same-major range.",
@@ -25,10 +25,10 @@
   },
   "acceptedVersions": [
     {
-      "libraryAbi": "0.47.0",
+      "libraryAbi": "0.60.0",
       "classification": "exact",
       "accepted": true,
-      "evidence": "Consumer baseline at CNA next fbd8e64a3 (0.47.0), the generation that retires CNA's modern GPU layer (plans/plan_modern_retirement.md MRT-008, MRT-012). tools/coverage/baselinediff.py 0.46.0 (a3da0a5bb) -> 0.47.0 (fbd8e64a3) with eng/cna-upstream-abi-allowlist.txt: 1419 consumed exports, 0 absent, 0 changed prototype; 3210 -> 3205 exports, 5 removed (compute work-group queries and indirect-argument initializers, none imported here), 0 added; 2 structs removed (the indirect-argument structures, mirrored by no managed layout); 0 scalar or string differences; 28 reviewed integer-constant differences -- two graphics capabilities and their flag bits 17-18, four renderer features, fourteen renderer limits and the storage format-usage bits 5-7 of the retired layer, CNA_RENDERER_FORMAT_USAGE_ALL 8191 -> 7967, and the capability and limit MAXIMUM sentinels 18 -> 16 and 21 -> 20; 0 floating-constant differences; 0 unreviewed breaking differences. The six flag findings were reviewed by hand first, because CNA's baseline did not record shift-form values; the diff has evaluated both generations' headers since CNA CBIND-159 and reports them itself. CNA.NET drops GraphicsCapability.ComputeShaders and IndirectDraw, CnaGraphicsCapability's twins, and the three storage members of both format-usage enums in the same change."
+      "evidence": "CNA next 1fd90048730cf7ec97676ae14d4322a9c3a1f0b9, reviewed from previously accepted fbd8e64a3 (0.47.0). 1419 consumed exports: 0 absent, 0 changed prototype, 0 new requirements. 3205 -> 3397 exports (8 unconsumed classification routes renamed, 200 additions); 195 -> 217 structs with 0 existing layout changes; 295 -> 310 scalars (2 unconsumed classification typedefs renamed, 17 added); 14 string constants unchanged; 1468 -> 1537 integer constants (15 removed, 1 changed, 84 added); 11 floating constants unchanged. All 26 findings individually reviewed in eng/cna-upstream-abi-allowlist.txt; zero unreviewed breaking differences. See docs/native-abi-0.60-review.md for per-contract review, portable C layout/prototype/callback/constant evidence and runtime canaries. Behavioral review includes ABI_VERSIONING.md Behaviour corrections within ABI 0.60 and the intervening ownership, error and lifetime corrections; source shape alone is insufficient. Linux x64 tools/abi-verify: 1137/1137 values, 1419/1419 prototypes, 23 callbacks, 599 constants, zero mismatches; 12/12 negative controls rejected. Runtime fixtures: 2 accepted, 13 rejected; selected cmake-build-sdlgpu/modules/c-api/libcna_c_api.so reports 0.60.0 and passes all required exports and the metadata/signature/guarded-struct canaries. The headless native gamer cursor contract checks pass. Managed integration regressions compile; runtime device qualification and other platform cells are pending as documented."
     }
   ],
   "retiredVersions": [
@@ -116,16 +116,21 @@
       "libraryAbi": "0.46.0",
       "retiredBecause": "Superseded by 0.47.0. Every route this consumer imports is unchanged between them; the step removed the modern GPU layer, whose capability, feature, limit and format-usage values this consumer no longer names. The retired-0.46.0 fixture therefore passes every symbol and shape probe and is refused on the version rule alone.",
       "previousClassification": "exact"
+    },
+    {
+      "libraryAbi": "0.47.0",
+      "retiredBecause": "Superseded by 0.60.0. All 1419 imported prototypes and existing layouts survive, but native behavior changes (tick-only RunOneFrame, read-only touch snapshots, strict WAV decoding, post-disposal occlusion state and networking/lifetime corrections). The retired fixture exports all required symbols; version admission alone refuses it. See docs/native-abi-0.60-review.md.",
+      "previousClassification": "exact"
     }
   ],
   "default": "reject",
   "fixtures": [
     {
-      "name": "exact-0.47.0",
+      "name": "exact-0.60.0",
       "expected": "accept"
     },
     {
-      "name": "exact-0.47.0-extra-symbol",
+      "name": "exact-0.60.0-extra-symbol",
       "expected": "accept"
     },
     {
@@ -149,7 +154,11 @@
       "expected": "reject"
     },
     {
-      "name": "unreviewed-0.48.0",
+      "name": "retired-0.47.0",
+      "expected": "reject"
+    },
+    {
+      "name": "unreviewed-0.61.0",
       "expected": "reject"
     },
     {
@@ -165,7 +174,7 @@
       "expected": "reject"
     },
     {
-      "name": "structurally-incompatible-0.47.0",
+      "name": "structurally-incompatible-0.60.0",
       "expected": "reject"
     },
     {
