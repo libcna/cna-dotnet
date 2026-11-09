@@ -146,7 +146,10 @@ jobs:
           # plans/plan_apple_m4.md AM4-288).
           - os: macos-15-intel
             report: osx-x64
-          - os: macos-14
+          # arm64 macOS: two runs on 2026-11-09 queued a macos-14 job that never received a runner
+          # and was cancelled; macos-15 is GitHub's current arm64 image (CNA's own Apple CI moved
+          # off macos-14 too, apple-ci.yml).
+          - os: macos-15
             report: osx-arm64
     steps:
       - uses: actions/checkout@v4
