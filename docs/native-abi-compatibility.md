@@ -24,7 +24,7 @@ It cannot express CNA's documented experimental-0.x exception by itself.
 
 | CNA.NET consumer | Native library | CNA.NET result | Evidence |
 | --- | --- | --- | --- |
-| 0.60.0 | 0.60.0 | Accept | CNA `next` `1fd900487`, reviewed from `fbd8e64a3`; [admission evidence](native-abi-0.60-review.md). |
+| 0.60.0 | 0.60.0 | Accept | CNA `next` `30142a14d`; admitted at `1fd900487`, reviewed from `fbd8e64a3`; [admission evidence](native-abi-0.60-review.md). |
 | 0.60.0 | Any other 0.x | Reject | No current audited matrix entry, including retired 0.47.0. |
 | 0.60.0 | Any 1.x+ | Reject | Different ABI major. |
 
@@ -71,15 +71,15 @@ its device before its run, as XNA's `ApplyChanges` in a constructor created one)
 ## Which CNA this binding pairs with
 
 `CNA_UPSTREAM_COMMIT` in `.github/workflows/build.yml` is the one CNA commit this branch is written
-against: CNA `next` at `1fd900487`, C ABI 0.60.0. The pin moves only with a reviewed matrix
-change. Sibling dependency pins identify the local sources used with this generation.
-Every CI job that reads CNA reads that commit: the
-header gates (`tools/abi-verify`), the upstream diff, and `native-qualified-linux-x64`, which builds
-CNA's C API from it (OPENGLES3 with compiled effects, CNAEXT and devices on, siblings pinned beside
-it), installs the `CNACApi` component, admits that library with
-`scripts/Verify-NativeAbiCompatibility.sh --native-library` and only then runs the integration,
-GamerServices, ownership, corpus and package suites against it. No repository variable or secret is
-involved, so a run that did not load the library fails rather than being skipped.
+against: CNA `next` at `30142a14d`, C ABI 0.60.0. The pin moves only with a reviewed matrix change
+or, within the same generation, with a measured identical C surface and re-run gates. Sibling
+dependency pins identify the local sources used with this generation. Every CI job that reads CNA
+reads that commit: the header gates (`tools/abi-verify`), the upstream diff, and
+`native-qualified-linux-x64`, which builds CNA's C API from it (OPENGLES3 with compiled effects,
+CNAEXT and devices on, siblings pinned beside it), installs the `CNACApi` component, admits that
+library with `scripts/Verify-NativeAbiCompatibility.sh --native-library` and only then runs the
+integration, GamerServices, ownership, corpus and package suites against it. No repository variable
+or secret is involved, so a run that did not load the library fails rather than being skipped.
 
 ### Retired entries
 

@@ -2,7 +2,7 @@
 
 > **Status: exact public metadata for the selected XNA 4.0 Windows runtime profile; not yet
 > behaviorally complete or release-ready.** The strict comparison reports 256/256 types, zero
-> differences, zero CNA leaks, and an empty allowlist. The binding targets CNA C ABI 0.47.0.
+> differences, zero CNA leaks, and an empty allowlist. The binding targets CNA C ABI 0.60.0.
 
 CNA.NET is the C#/.NET binding for [CNA](https://github.com/libcna/cna), a native C++ game
 framework. Its intended path is:
@@ -98,9 +98,9 @@ The loader also accepts `CNA_NATIVE_DIR`. Explicit configuration is fail-fast an
 over package-native lookup. Admission follows
 [`cna-cs-native-abi/1`](docs/native-abi-compatibility.md), not a same-major range: the version must
 have a reviewed matrix entry, all 1419 imports must exist, and signature/shape canaries must pass.
-The one accepted entry today is C ABI 0.47.0: CNA `next`, at the commit `CNA_UPSTREAM_COMMIT` in
+The one accepted entry today is C ABI 0.60.0: CNA `next`, at the commit `CNA_UPSTREAM_COMMIT` in
 `.github/workflows/build.yml` pins and CI builds the native library from. CNA `main` and `develop`
-still carry 0.46.0 and are refused
+carry an older generation and are refused
 ([which CNA this binding pairs with](docs/native-abi-compatibility.md#which-cna-this-binding-pairs-with)).
 Wrong ABI, missing symbols, conflicts, wrong architecture/load failure, and missing-library cases
 report the attempted configuration, consumer/detected ABI where available, RID, and remediation;

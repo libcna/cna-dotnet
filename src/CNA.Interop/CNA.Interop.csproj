@@ -17,9 +17,13 @@
        DT_NEEDED names the soname and a package has no symlinks. On macOS (CNA plans/plan_apple_m4.md
        AM4-221) the same holds for libcna_c_api.dylib, whose LC_RPATH is @loader_path: its
        LC_LOAD_DYLIB entries name libSDL3.0.dylib, libSDL3_image.0.dylib and libSDL3_mixer.0.dylib,
-       so those names, read through their symlinks, are what is packed. -->
+       so those names, read through their symlinks, are what is packed. Since CNA 89fb1493f a
+       shared-runtime Linux build (CNA_SHARED_LIBRARY, ELF only) installs libcna.so beside it: the C
+       adapter links CNA's one shared runtime instead of private copies of its modules, and its
+       DT_NEEDED names libcna.so, an unversioned soname the lib*.so.? pattern does not match. -->
   <ItemGroup Condition="'$(CnaPackageAcceptance)' == 'true' and '$(CnaNativeDirectory)' != '' and '$(CnaNativeRid)' != ''">
     <CnaNativeAsset Include="$(CnaNativeDirectory)/libcna_c_api.so" Condition="Exists('$(CnaNativeDirectory)/libcna_c_api.so')" />
+    <CnaNativeAsset Include="$(CnaNativeDirectory)/libcna.so" Condition="Exists('$(CnaNativeDirectory)/libcna.so')" />
     <CnaNativeAsset Include="$(CnaNativeDirectory)/libcna_c_api.dylib" Condition="Exists('$(CnaNativeDirectory)/libcna_c_api.dylib')" />
     <CnaNativeAsset Include="$(CnaNativeDirectory)/lib*.so.?;$(CnaNativeDirectory)/lib*.?.dylib;$(CnaNativeDirectory)/*.dll"
                     Exclude="$(CnaNativeDirectory)/lib*.?.?.?.dylib" />

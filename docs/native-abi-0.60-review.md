@@ -82,3 +82,35 @@ Only 0.60.0 remains accepted. Historical 0.47.0 has the right imports/shapes but
 behavior, so keeping it would undermine the reviewed point matrix. The policy fixtures explicitly
 prove version-only retirement. CI pins the reviewed CNA commit plus matching local sibling source
 revisions; no CNA/native dependency was built or edited for this admission.
+
+## Re-pin to CNA `30142a14d` (2026-11-09)
+
+The pin moved to CNA `next` `30142a14d789de765801ff0c87e91e090f4e94be`, still C ABI 0.60.0, with
+sharp-runtime `0abe8a912` beside it. `tools/coverage/baselinediff.py` from `1fd900487` to `30142a14d`
+finds no difference in exports, prototypes, structs, scalars or constants; the CI diff from
+`fbd8e64a3` applies the same 26 allowlist entries, none stale. The header changes in between are
+comments. Behaviour on the consumed surface changed in three places:
+
+- `cna_effect_material_create` now also retains every C texture its source retains, stock slots and
+  parameter slots, until the material replaces it or is destroyed (HND-TQ-25 D8). This supersedes
+  "no extra C texture retention is promised" in B-effects. Destroying such a texture refuses while
+  the material lives; `NativeResourceHandle` queues the refused release and retries it, as it already
+  did for a texture its source effect held. A material or base-Effect clone of a stock effect draws
+  with that stock effect's shaders on its own raw parameter values (D9). `EffectMaterial` forwards
+  both unchanged.
+- The C media adapters hold shared `MediaSource` objects (HND-TQ-39); the index-based routes this
+  binding imports keep their contract.
+- A C content load of a texture whose surface format is unknown reports `CNA_RESULT_NOT_SUPPORTED`
+  instead of `CNA_RESULT_IO` (HND-TQ-16-XNB), which `CnaCanonicalException` already maps to
+  `NotSupportedException`.
+
+CNA's C API component also installs `libcna.so`, the shared runtime `libcna_c_api.so` has linked since
+CNA `89fb1493f` (before `1fd900487`); `CNA.Interop` now packs it, and `Package-Acceptance.sh` checks
+that every carried library the C API needs is in the package.
+
+Linux x64, Release OPENGLES3 `CNACApi` component built from `30142a14d`: admission passed (1419
+exports, 2 accepted and 13 rejected fixtures, version 0.60.0); `tools/abi-verify` 1137 values, 1419
+prototypes, 23 callbacks and 599 constants with zero mismatches; Framework 660/660 and XnaCompat
+319/319, native integration 269/269 in Debug and Release, GamerServices 28/28, ownership stress 100
+cycles in Debug and Release, the full corpus (483 observations) and package acceptance passed. The
+native suites ran on CNA's private display, not under `xvfb-run`.

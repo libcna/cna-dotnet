@@ -155,6 +155,26 @@ for required in "runtimes/$rid/native/libcna_c_api.$library_suffix" "runtimes/$r
     exit 1
   fi
 done
+# Every library the installed component carries and the C API needs, directly or through another
+# carried library, travels in the package. Since CNA 89fb1493f that includes the shared runtime
+# libcna.so; a package without it builds and then fails at the first load, so name it here.
+if [[ "$library_suffix" == so ]]; then
+  pending_libraries=("libcna_c_api.so")
+  checked_libraries=" "
+  while ((${#pending_libraries[@]} > 0)); do
+    library=${pending_libraries[0]}
+    pending_libraries=("${pending_libraries[@]:1}")
+    while read -r needed; do
+      [[ -n "$needed" && -e "$native_directory/$needed" && "$checked_libraries" != *" $needed "* ]] || continue
+      checked_libraries+="$needed "
+      if ! grep -Fxq "runtimes/$rid/native/$needed" <<<"$interop_entries"; then
+        echo "CNA.Interop package is missing runtimes/$rid/native/$needed, which $library needs." >&2
+        exit 1
+      fi
+      pending_libraries+=("$needed")
+    done < <(readelf -d "$native_directory/$library" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
+  done
+fi
 
 DOTNET_COMMAND="$dotnet_command" CNA_DOTNET_ROOT="$repo_root" \
   "$template_root/scripts/verify-template.sh" --mode development
@@ -292,11 +312,18 @@ CNA_NATIVE_LIBRARY="$valid_override" CNA_NATIVE_DIR=/deliberately/ignored \
   "$dotnet_command" "$consumer_dll" --frames 60 >"$logs_root/explicit-override.log" 2>&1
 grep -Fq 'drew 60 frames' "$logs_root/explicit-override.log"
 
+# Measured, not written down: the native entries the package carries and the fixture counts the
+# admission run above reported. Both were literals that fell behind -- the native list when CNA
+# added libcna.so, the fixture count when the matrix grew a thirteenth rejected fixture.
+native_entries=$(grep "^runtimes/$rid/native/" <<<"$interop_entries" | jq -R . | jq -s -c .)
+fixture_counts=$(jq -r '"\(.accepted | length) accepted / \(.rejected | length) rejected"' \
+  "$abi_compatibility_root/abi-compatibility-report.json")
+
 jq -n \
   --arg version "$package_version" \
   --arg rid "$rid" \
-  --arg nativeLibrary "libcna_c_api.$library_suffix" \
-  --arg sdlLibrary "$sdl_library" \
+  --argjson nativeEntries "$native_entries" \
+  --arg fixtureCounts "$fixture_counts" \
   --arg nativeSource "$native_directory" \
   --arg interop "CNA.Interop.$package_version.nupkg" \
   --arg framework "CNA.Framework.$package_version.nupkg" \
@@ -308,7 +335,7 @@ jq -n \
     packageVersion: $version,
     nativeSource: $nativeSource,
     packages: [$interop, $framework, $compat],
-    contents: ["managed DLLs", "XML documentation", "LICENSE", "NOTICE.md", "README.md", "portable PDB symbol packages", ("runtimes/" + $rid + "/native/" + $nativeLibrary), ("runtimes/" + $rid + "/native/" + $sdlLibrary)],
+    contents: (["managed DLLs", "XML documentation", "LICENSE", "NOTICE.md", "README.md", "portable PDB symbol packages"] + $nativeEntries),
     isolatedRestore: "passed",
     isolatedBuild: "passed",
     sourceOrSiblingPaths: "absent",
@@ -323,7 +350,7 @@ jq -n \
     conflictingLibrariesDiagnostic: "passed",
     explicitOverridePrecedence: "passed",
     nativeAbiPolicy: "cna-cs-native-abi/1",
-    nativeAbiCompatibilityFixtures: "2 accepted / 12 rejected",
+    nativeAbiCompatibilityFixtures: $fixtureCounts,
     nativeAbiSelectedLibrary: "passed",
     published: false,
     supportedRidClaim: false

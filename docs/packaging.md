@@ -31,16 +31,18 @@ scripts/Package-Acceptance.sh --native-directory build-consumer/cna-native-linux
 ```
 
 The native input is mandatory and explicit, and it is a directory: `libcna_c_api.so` with RUNPATH
-`$ORIGIN` plus the SDL libraries CNA builds. The script refuses a library whose RUNPATH is anything
-but `$ORIGIN` -- a build-tree library names that tree, so a package made from it loaded only on the
-machine that built it, which the earlier single-file input did. It runs on a linux-x64 or an
-osx-arm64 host and refuses any other (on macOS the library is `libcna_c_api.dylib`, its run path
-`@loader_path`, read with `otool -l`),
-creates an isolated feed and package cache, performs a clean Release solution build, packs,
-inspects, installs, builds and runs a newly generated consumer, and writes
-`acceptance-report.json`. Omitting `--output` writes to `build-consumer/package-acceptance`
-(replaced on the next run; never `/tmp`). It never invokes `nuget push`. FFmpeg, curl and opus stay
-system dependencies of this native configuration, as CNA's `docs/c-api/CONSUMING.md` records.
+`$ORIGIN` plus the SDL libraries CNA builds and, since CNA `89fb1493f`, the shared runtime
+`libcna.so` that a Linux C API links. The script checks that every library in that directory which
+the C API needs, directly or through another one there, is in the `CNA.Interop` package. The script
+refuses a library whose RUNPATH is anything but `$ORIGIN` -- a build-tree library names that tree,
+so a package made from it loaded only on the machine that built it, which the earlier single-file
+input did. It runs on a linux-x64 or an osx-arm64 host and refuses any other (on macOS the library
+is `libcna_c_api.dylib`, its run path `@loader_path`, read with `otool -l`), creates an isolated
+feed and package cache, performs a clean Release solution build, packs, inspects, installs, builds
+and runs a newly generated consumer, and writes `acceptance-report.json`. Omitting `--output` writes
+to `build-consumer/package-acceptance` (replaced on the next run; never `/tmp`). It never invokes
+`nuget push`. FFmpeg, curl and opus stay system dependencies of this native configuration, as CNA's
+`docs/c-api/CONSUMING.md` records.
 
 The measured preview version was `0.1.0-local.1`, producing:
 
@@ -64,6 +66,11 @@ runtimes/linux-x64/native/libSDL3_image.so.0
 Re-measured 2026-10-01 against CNA `402c1aaa9` (C ABI 0.36.0, OPENGLES3, compiled effects): the
 consumer's packaged `libcna_c_api.so` resolves SDL from its own `runtimes/linux-x64/native`, with no
 path into the CNA tree.
+
+Re-measured 2026-11-09 against CNA `30142a14d` (C ABI 0.60.0, Release OPENGLES3, compiled effects):
+the package carries `libcna_c_api.so`, `libcna.so`, `libSDL3.so.0` and `libSDL3_mixer.so.0` (this
+configuration builds no SDL_image), and the consumer draws 60 and 600 frames from them. Without
+`libcna.so` it failed to load.
 
 ## The XNA graphics profile travels with the package
 
