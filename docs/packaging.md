@@ -72,6 +72,9 @@ the package carries `libcna_c_api.so`, `libcna.so`, `libSDL3.so.0` and `libSDL3_
 configuration builds no SDL_image), and the consumer draws 60 and 600 frames from them. Without
 `libcna.so` it failed to load.
 
+Re-measured 2026-11-11 against CNA `4ef67873b` (C ABI 0.60.0, the same configuration): the same four
+libraries, and the consumer again draws 60 and 600 frames.
+
 ## The XNA graphics profile travels with the package
 
 XNA's build embedded a project's `<XnaProfile>` (Reach or HiDef) in the game assembly as the

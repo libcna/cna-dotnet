@@ -114,3 +114,41 @@ prototypes, 23 callbacks and 599 constants with zero mismatches; Framework 660/6
 319/319, native integration 269/269 in Debug and Release, GamerServices 28/28, ownership stress 100
 cycles in Debug and Release, the full corpus (483 observations) and package acceptance passed. The
 native suites ran on CNA's private display, not under `xvfb-run`.
+
+## Re-pin to CNA `4ef67873b` (2026-11-11)
+
+The pin moved to CNA `next` `4ef67873b252bb07bcb270011ae7bc5a55aac105`, still C ABI 0.60.0, with
+sharp-runtime `f8ea4b1f7` beside it; easy-gl and meta-gl stay at `b582bd85f` and `795bcdcfe`.
+`tools/coverage/baselinediff.py` from `30142a14d` to `4ef67873b` finds no difference in exports
+(3,397), prototypes, structs (217), scalars (310) or integer (1,537), floating (11) and string (14)
+constants; the CI diff from `fbd8e64a3` applies the same 26 allowlist entries, none stale. The C
+header changes are comments. Behaviour on the consumed surface changed in these places, none of
+which needs a binding change:
+
+- `cna_effect_clone` now retains every C texture its source retains, in the stock texture slots and
+  in parameters, through elements and structure members, as `cna_effect_material_create` already did
+  (D8 above). A clone's texture parameter reads its texture back, and destroying that texture
+  refuses while the clone lives; `NativeResourceHandle` queues the refused release and retries it,
+  as it does for a material. This supersedes "no extra C texture retention is promised" in
+  B-effects for clones as well. ShaderEffect sampler units are not carried to a clone.
+- The five stock effects latch their parameters at `cna_effect_apply`, as XNA's native pass does: a
+  property set after Apply reaches a draw only through the next Apply. Textures are still read from
+  the device at draw time. The managed stock wrappers forward properties and Apply unchanged.
+- Stock effect parameters start at zero, as XNA's embedded effects do, so a base-Effect or material
+  clone made before its source's first Apply draws with a zero WorldViewProj; a clone of the
+  SpriteEffect draws with the sprite shaders.
+- A stock texture parameter refuses a disposed texture and an active render target as XNA's
+  `SetValue(Texture)` does, and a disposed effect or texture is named by its type in the
+  ObjectDisposedException; `CnaCanonicalException` maps both refusals already.
+- Content loading follows XNA in more refusals (null and unreadable streams, texture sizes of zero or
+  less, oversize textures, Texture3D on Reach), and finite XACT loops play loop count n as n + 1
+  passes. These reach the binding through the existing content and XACT routes unchanged.
+
+Linux x64, Release OPENGLES3 `CNACApi` component built from `4ef67873b` (with the local sibling
+checkouts; meta-gl was on a work branch two additive commits past `795bcdcfe`): admission passed
+(1419 exports, 2 accepted and 13 rejected fixtures, version 0.60.0); `tools/abi-verify` 1137 values,
+23 callbacks and 599 constants with zero mismatches; Framework 660/660 and XnaCompat 319/319 in Debug
+and Release, native integration 269/269 in Debug and Release, GamerServices 28/28, ownership stress
+100 cycles in Debug and Release (3000/3000 releases), the full corpus (483 observations), api-compat
+with zero leaks, the template check in both modes and package acceptance passed, all native suites on
+CNA's private display.

@@ -1,6 +1,7 @@
 # Reviewed transition: CNA fbd8e64a3 (0.47.0) -> 1fd900487 (0.60.0), 2026-11-05.
-# Re-pinned 2026-11-09 to 30142a14d (0.60.0): 1fd900487 -> 30142a14d has no surface difference,
-# so the CI diff fbd8e64a3 -> 30142a14d produces exactly these findings.
+# Re-pinned 2026-11-09 to 30142a14d and 2026-11-11 to 4ef67873b (both 0.60.0): 1fd900487 ->
+# 30142a14d -> 4ef67873b has no surface difference, so the CI diff fbd8e64a3 -> 4ef67873b
+# produces exactly these findings.
 # Each entry must match an actual finding; stale entries fail the gate.
 # No imported route was removed or changed. No existing POD layout changed.
 # ABI 0.49 renames eight backend classification routes and two typedefs to renderer:
