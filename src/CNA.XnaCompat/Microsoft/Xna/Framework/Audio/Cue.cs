@@ -53,9 +53,11 @@ public sealed class Cue : IDisposable
         _cue.Apply3D(listener.ToFramework(), emitter.ToFramework());
     }
 
-    public float GetVariable(string name) => _cue.GetVariable(name);
+    // An unknown or engine-global name is XNA's IndexOutOfRangeException (Helpers.GetExceptionFromResult
+    // IL_0189-0193); CNA's C API reports it as INVALID_ARGUMENT with that canonical type.
+    public float GetVariable(string name) => XnaExceptions.Guard(() => _cue.GetVariable(name));
 
-    public void SetVariable(string name, float value) => _cue.SetVariable(name, value);
+    public void SetVariable(string name, float value) => XnaExceptions.Guard(() => _cue.SetVariable(name, value));
 
     public void Dispose()
     {

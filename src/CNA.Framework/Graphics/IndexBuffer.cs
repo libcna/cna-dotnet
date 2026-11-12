@@ -76,7 +76,8 @@ public class IndexBuffer : IDisposable
             return IndexElementSize.SixteenBits;
         }
 
-        if (indexType == typeof(int) || indexType == typeof(uint))
+        if (indexType == typeof(int) || indexType == typeof(uint) ||
+            indexType == typeof(float) || indexType == typeof(bool))
         {
             return IndexElementSize.ThirtyTwoBits;
         }

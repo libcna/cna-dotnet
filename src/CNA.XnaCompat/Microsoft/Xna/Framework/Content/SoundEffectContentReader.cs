@@ -33,7 +33,7 @@ internal sealed class SoundEffectContentReader : ContentTypeReader<SoundEffect>
 
         _ = input.ReadInt32();  // loop start, in samples
         _ = input.ReadInt32();  // loop length, in samples
-        _ = input.ReadInt32();  // duration in milliseconds, which the PCM already determines
+        int durationMilliseconds = input.ReadInt32();
 
         if (format.Length < 16)
         {
@@ -68,6 +68,7 @@ internal sealed class SoundEffectContentReader : ContentTypeReader<SoundEffect>
                 $"Content asset '{input.AssetName}' has {channels} channels; a SoundEffect is mono or stereo.");
         }
 
-        return new SoundEffect(data, sampleRate, (AudioChannels)channels);
+        return new SoundEffect(data, sampleRate, (AudioChannels)channels,
+            TimeSpan.FromMilliseconds(durationMilliseconds));
     }
 }

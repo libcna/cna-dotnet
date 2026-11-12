@@ -116,13 +116,10 @@ public class CompatWindowAndAudioContentTests
     /// is routed to CNA's own loader. A <c>List&lt;SoundEffect&gt;</c> is the smallest asset shaped
     /// like that.
     ///
-    /// The duration in the file is deliberately wrong here. It is the pipeline's own measurement of
-    /// the same PCM, and preferring it would hide exactly the mistake worth catching: a reader that
-    /// took the header at its word would report a plausible duration for a buffer it had truncated.
-    /// The assertion is that the data wins.
+    /// XNA reports the stored duration even when the PCM implies a different value.
     /// </summary>
     [global::CNA.Integration.Tests.NativeFact]
-    public void NestedSoundEffect_ReadsThePcmRatherThanTheDeclaredDuration()
+    public void NestedSoundEffect_ReportsTheDeclaredDuration()
     {
         const int sampleRate = 22050;
         const int sampleCount = 11025;   // exactly half a second
@@ -150,10 +147,7 @@ public class CompatWindowAndAudioContentTests
                 sounds =>
                 {
                     SoundEffect only = Assert.Single(sounds);
-                    Assert.InRange(
-                        only.Duration,
-                        TimeSpan.FromMilliseconds(499),
-                        TimeSpan.FromMilliseconds(501));
+                    Assert.Equal(TimeSpan.FromMilliseconds(9999), only.Duration);
                 });
         });
     }

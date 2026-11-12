@@ -116,7 +116,7 @@ internal static class ContentTextureLevels
 {
     internal static int Count(ContentReader input, int levelCount)
     {
-        if (levelCount is < 1 or > 32)
+        if (levelCount > 32)
         {
             throw new ContentLoadException(
                 $"Content asset '{input.AssetName}' declares {levelCount} mip levels, which is not a possible chain.");

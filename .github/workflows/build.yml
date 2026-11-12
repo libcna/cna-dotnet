@@ -14,14 +14,14 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   # Reviewed ABI 0.60.0, including the TQ behavior corrections. See the admission review.
   # All header and native jobs use this exact generation, never a moving branch.
-  CNA_UPSTREAM_COMMIT: 4ef67873b252bb07bcb270011ae7bc5a55aac105
+  CNA_UPSTREAM_COMMIT: a6c2ffe3d8ddeea2d19ae43c9e94bd00fbf5f78d
   # Baseline of the immediately preceding consumer admission (ABI 0.47.0). A re-pin within the
   # same generation keeps it, so the diff keeps covering every change since that admission.
   CNA_PREVIOUS_ACCEPTED_COMMIT: fbd8e64a3fde18beeb2861d546a279d90d0ed5bc
   # The sibling checkouts CNA builds from (its ../sharp-runtime and ../easy-gl, and easy-gl's
   # ../meta-gl), pinned with it for native-qualified-linux-x64. CNA's configure refuses a sibling
   # whose declared version it does not support.
-  SHARP_RUNTIME_COMMIT: f8ea4b1f781fffab887d55966949395ae6e1b5ab
+  SHARP_RUNTIME_COMMIT: de06c17c1f02e480c69473b42796a7194edd17fb
   EASY_GL_COMMIT: b582bd85f646678d1de38473160defed4729f323
   META_GL_COMMIT: 795bcdcfe9e2c418ced189717d3699cbb0847cc0
   CNA_PACKAGE_VERSION: 0.1.0-ci.${{ github.run_number }}

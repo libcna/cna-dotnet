@@ -4,6 +4,7 @@ namespace Microsoft.Xna.Framework.Audio;
 public sealed class SoundEffect : IDisposable
 {
     private readonly CNA.Audio.SoundEffect _soundEffect;
+    private readonly TimeSpan? _contentDuration;
     private readonly List<WeakReference<SoundEffectInstance>> _children = new();
     private bool _disposed;
 
@@ -25,6 +26,13 @@ public sealed class SoundEffect : IDisposable
             buffer, offset, count, sampleRate, (CNA.Audio.AudioChannels)(int)channels, loopStart, loopLength);
     }
 
+    internal SoundEffect(
+        byte[] buffer, int sampleRate, AudioChannels channels, TimeSpan duration)
+        : this(buffer, sampleRate, channels)
+    {
+        _contentDuration = duration;
+    }
+
     internal SoundEffect(ulong nativeHandleValue)
     {
         _soundEffect = new CNA.Audio.SoundEffect(nativeHandleValue);
@@ -43,7 +51,7 @@ public sealed class SoundEffect : IDisposable
         set => _soundEffect.Name = value;
     }
 
-    public TimeSpan Duration => _soundEffect.Duration;
+    public TimeSpan Duration => _contentDuration ?? _soundEffect.Duration;
 
     public static float MasterVolume
     {
@@ -100,7 +108,8 @@ public sealed class SoundEffect : IDisposable
     public static SoundEffect FromStream(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using CNA.Audio.SoundEffect decoded = CNA.Audio.SoundEffect.FromStream(stream);
+        using CNA.Audio.SoundEffect decoded =
+            XnaExceptions.Guard(() => CNA.Audio.SoundEffect.FromStream(stream));
         return new SoundEffect(decoded.DetachNativeHandle());
     }
 

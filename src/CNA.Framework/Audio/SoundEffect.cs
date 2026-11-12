@@ -21,6 +21,7 @@ namespace CNA.Audio;
 public class SoundEffect : IDisposable
 {
     private readonly NativeResourceHandle _handle;
+    private TimeSpan? _disposedDuration;
 
     public SoundEffect(byte[] buffer, int sampleRate, AudioChannels channels)
         : this(ValidateBasicBuffer(buffer), 0, buffer?.Length ?? 0, sampleRate, channels, loopStart: 0, loopLength: 0)
@@ -130,6 +131,11 @@ public class SoundEffect : IDisposable
     {
         get
         {
+            if (_disposedDuration is { } saved)
+            {
+                return saved;
+            }
+
             CnaResult result = Native.cna_sound_effect_get_duration_ticks(new CnaHandle(NativeHandleValue), out long ticks);
             GC.KeepAlive(this);
             CnaException.ThrowIfFailed(result, nameof(Duration));
@@ -410,6 +416,17 @@ public class SoundEffect : IDisposable
 
     public void Dispose()
     {
+        if (!_handle.IsClosed)
+        {
+            CnaResult result = Native.cna_sound_effect_get_duration_ticks(
+                new CnaHandle(NativeHandleValue), out long ticks);
+            GC.KeepAlive(this);
+            if (result.IsSuccess())
+            {
+                _disposedDuration = TimeSpan.FromTicks(ticks);
+            }
+        }
+
         _handle.Dispose();
         GC.SuppressFinalize(this);
     }

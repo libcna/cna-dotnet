@@ -652,9 +652,9 @@ public class GraphicsDevice : IDisposable
         }
 
         ValidateBoundDrawInputs(indexed: true);
-        _framework.DrawInstancedPrimitives(
+        XnaExceptions.Guard(() => _framework.DrawInstancedPrimitives(
             (CNA.Graphics.PrimitiveType)(int)primitiveType, baseVertex, minVertexIndex,
-            numVertices, startIndex, primitiveCount, instanceCount);
+            numVertices, startIndex, primitiveCount, instanceCount));
     }
 
     /// <summary>Matches real XNA's <c>SetRenderTargets</c>. The composed backend takes
@@ -674,7 +674,7 @@ public class GraphicsDevice : IDisposable
             converted[i] = renderTargets[i].Framework;
         }
 
-        _framework.SetRenderTargets(converted);
+        XnaExceptions.Guard(() => _framework.SetRenderTargets(converted));
     }
 
     public RenderTargetBinding[] GetRenderTargets()

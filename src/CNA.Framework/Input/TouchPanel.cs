@@ -157,7 +157,7 @@ public static class TouchPanel
 
         if (result == CnaResult.InvalidState)
         {
-            throw new InvalidOperationException("No gesture is available; check TouchPanel.IsGestureAvailable first.");
+            throw new InvalidOperationException(CnaError.GetLastErrorMessage());
         }
 
         CnaException.ThrowIfFailed(result, nameof(ReadGesture));

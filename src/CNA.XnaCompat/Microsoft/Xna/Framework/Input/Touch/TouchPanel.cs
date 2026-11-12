@@ -37,7 +37,8 @@ public static class TouchPanel
         set => CNA.Input.Touch.TouchPanel.EnabledGestures = (CNA.Input.Touch.GestureType)(int)value;
     }
 
-    public static bool IsGestureAvailable => CNA.Input.Touch.TouchPanel.IsGestureAvailable;
+    public static bool IsGestureAvailable =>
+        XnaExceptions.Guard(() => CNA.Input.Touch.TouchPanel.IsGestureAvailable);
 
     public static GestureSample ReadGesture() => GestureSample.FromFramework(CNA.Input.Touch.TouchPanel.ReadGesture());
 
