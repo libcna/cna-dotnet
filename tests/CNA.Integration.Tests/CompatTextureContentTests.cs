@@ -91,6 +91,21 @@ public class CompatTextureContentTests
     }
 
     [global::CNA.Integration.Tests.NativeFact]
+    public void ReachTexture2D_OverriddenStreamPreservesNativeConstructorFailure()
+    {
+        RunInAFrame(game =>
+        {
+            Assert.Equal(GraphicsProfile.Reach, game.GraphicsDevice.GraphicsProfile);
+            using var content = new MemoryContentManager(game.Services,
+                TextureLevelXnb.Texture("Texture2D", 3, 2, 36, 4));
+            // Color and dimensions pass managed validation; native rejects Reach NPOT mipmaps.
+            string assetName = $"cna-virtual-{Guid.NewGuid():N}";
+            Assert.False(File.Exists(Path.Combine(AppContext.BaseDirectory, assetName + ".xnb")));
+            Assert.Throws<NotSupportedException>(() => content.Load<Texture2D>(assetName));
+        }, reach: true);
+    }
+
+    [global::CNA.Integration.Tests.NativeFact]
     public void SpriteFont_FileAndStreamLoadsPreserveNotSupportedAtlas()
     {
         RunInAFrame(game =>
@@ -188,9 +203,9 @@ public class CompatTextureContentTests
         }
     }
 
-    private static void RunInAFrame(Action<XnaGame> body, bool hiDef = false)
+    private static void RunInAFrame(Action<XnaGame> body, bool hiDef = false, bool reach = false)
     {
-        using var game = new FrameProbe(body, hiDef);
+        using var game = new FrameProbe(body, hiDef, reach);
         for (int frame = 0; frame < 4 && !game.Ran; frame++)
         {
             game.RunFrameEXT();
@@ -207,13 +222,17 @@ public class CompatTextureContentTests
     {
         private readonly Action<XnaGame> _body;
 
-        public FrameProbe(Action<XnaGame> body, bool hiDef)
+        public FrameProbe(Action<XnaGame> body, bool hiDef, bool reach)
         {
             _body = body;
             var graphics = new GraphicsDeviceManager(this);
             if (hiDef)
             {
                 graphics.GraphicsProfile = GraphicsProfile.HiDef;
+            }
+            else if (reach)
+            {
+                graphics.GraphicsProfile = GraphicsProfile.Reach;
             }
         }
 

@@ -7,9 +7,25 @@ namespace CNA.Integration.Tests;
 internal static class Program
 {
     internal const string ConstructGame = "construct-game";
+    internal const string ParentRelativeContentRoot = "parent-relative-content-root";
 
     private static int Main(string[] args)
     {
+        if (args is [ParentRelativeContentRoot])
+        {
+            try
+            {
+                CnaDotnet.Integration.Tests.Compat.CompatResourceContentTests.CheckParentRelativeContentRoot();
+                Console.WriteLine("title-root-ok");
+                return 0;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine(exception);
+                return 1;
+            }
+        }
+
         if (args is not [ConstructGame])
         {
             return 2;

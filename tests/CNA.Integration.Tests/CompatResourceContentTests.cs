@@ -1,4 +1,5 @@
 using CNA.XnaCompat.Extensions;
+using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
 using System.Text;
@@ -7,6 +8,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Xunit;
 using XnaGame = Microsoft.Xna.Framework.Game;
+using TextureLevelXnb = CnaDotnet.Integration.Tests.Content.TextureLevelXnb;
 
 // NOT under CNA: see CompatWindowAndAudioContentTests.
 namespace CnaDotnet.Integration.Tests.Compat;
@@ -63,6 +65,80 @@ public class CompatResourceContentTests
             texture.GetData(read);
             Assert.Equal(texels, read);
         });
+    }
+
+    [global::CNA.Integration.Tests.NativeFact]
+    public void ReachTexture2D_ResourcePreservesNativeConstructorFailure()
+    {
+        RunInAFrame(game =>
+        {
+            Assert.Equal(GraphicsProfile.Reach, game.GraphicsDevice.GraphicsProfile);
+            string assetName = $"cna-resource-{Guid.NewGuid():N}";
+            Assert.False(File.Exists(Path.Combine(AppContext.BaseDirectory, assetName + ".xnb")));
+            using var resources = new ResourceContentManager(game.Services,
+                new BytesResourceManager(assetName, TextureLevelXnb.Texture("Texture2D", 3, 2, 36, 4)));
+            Assert.Throws<NotSupportedException>(() => resources.Load<Texture2D>(assetName));
+        }, reach: true);
+    }
+
+    [Fact]
+    public async Task ParentRelativeRoot_DefaultOpenStreamUsesTitleDirectoryInAnotherProcess()
+    {
+        // Only the child gets a different CWD; other tests keep the runner's working directory.
+        string workingDirectory = Directory.CreateTempSubdirectory("cna-content-cwd-").FullName;
+        try
+        {
+            var start = new ProcessStartInfo(Environment.GetEnvironmentVariable("DOTNET_HOST_PATH") ?? "dotnet")
+            {
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            start.ArgumentList.Add("exec");
+            start.ArgumentList.Add(typeof(global::CNA.Integration.Tests.Program).Assembly.Location);
+            start.ArgumentList.Add(global::CNA.Integration.Tests.Program.ParentRelativeContentRoot);
+            using Process child = Process.Start(start)!;
+            Task<string> output = child.StandardOutput.ReadToEndAsync();
+            Task<string> error = child.StandardError.ReadToEndAsync();
+            if (!child.WaitForExit(60_000))
+            {
+                child.Kill(entireProcessTree: true);
+                child.WaitForExit();
+                Assert.Fail("The content-root child did not finish.");
+            }
+            string standardOutput = await output;
+            string standardError = await error;
+            Assert.True(child.ExitCode == 0, $"exit {child.ExitCode}: {standardOutput} {standardError}");
+            Assert.Contains("title-root-ok", standardOutput);
+        }
+        finally
+        {
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    internal static void CheckParentRelativeContentRoot()
+    {
+        string title = Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar);
+        string working = Path.GetFullPath(Directory.GetCurrentDirectory()).TrimEnd(Path.DirectorySeparatorChar);
+        Assert.NotEqual(title, working);
+        string root = Path.Combine("..", $"cna-content-{Guid.NewGuid():N}");
+        string directory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, root));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            File.WriteAllBytes(Path.Combine(directory, "asset.xnb"), TextureLevelXnb.Integer());
+            Assert.False(File.Exists(Path.Combine(root, "asset.xnb")));
+            using var content = new ContentManager(new GameServiceContainer(), root);
+            Assert.Equal(42, content.Load<int>("asset"));
+            ContentLoadException missing = Assert.Throws<ContentLoadException>(() => content.Load<int>("missing"));
+            Assert.Equal("Error loading \"missing\". File not found.", missing.Message);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     /// <summary>
@@ -123,10 +199,13 @@ public class CompatResourceContentTests
         return container.ToArray();
     }
 
-    private static void RunInAFrame(Action<XnaGame> body)
+    private static void RunInAFrame(Action<XnaGame> body, bool reach = false)
     {
-        using var game = new FrameProbe(body);
-        game.RunFrameEXT();
+        using var game = new FrameProbe(body, reach);
+        for (int frame = 0; frame < 4 && !game.Ran; frame++)
+        {
+            game.RunFrameEXT();
+        }
 
         Assert.True(game.Ran, "The frame never ran, so nothing was exercised.");
         if (game.Failure is { } failure)
@@ -139,10 +218,14 @@ public class CompatResourceContentTests
     {
         private readonly Action<XnaGame> _body;
 
-        public FrameProbe(Action<XnaGame> body)
+        public FrameProbe(Action<XnaGame> body, bool reach)
         {
             _body = body;
-            _ = new GraphicsDeviceManager(this);
+            var graphics = new GraphicsDeviceManager(this);
+            if (reach)
+            {
+                graphics.GraphicsProfile = GraphicsProfile.Reach;
+            }
         }
 
         public bool Ran { get; private set; }

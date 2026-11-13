@@ -12,7 +12,7 @@ public class ContentManager : IDisposable
 
     private readonly IServiceProvider _serviceProvider;
     private WeakReference<byte[]>? _weakTextureReadBuffer;
-    // Keep the buffer strong through nested reads, and weak between outermost reads.
+    // Keep a newly allocated buffer strong until the outermost read ends.
     private byte[]? _textureReadBuffer;
     private int _textureReadDepth;
     private readonly Dictionary<string, object> _loadedAssets = new(StringComparer.OrdinalIgnoreCase);
@@ -62,7 +62,6 @@ public class ContentManager : IDisposable
         if (buffer is not null && buffer.Length >= data.Length)
         {
             data.CopyTo(buffer, 0);
-            _textureReadBuffer = buffer;
             return buffer;
         }
 
@@ -209,7 +208,7 @@ public class ContentManager : IDisposable
         {
             string path = CNA.Content.XnaContentPath.ToFilePath(RootDirectory, assetName, ".xnb");
             return CNA.TitleContainer.IsPathAbsolute(RootDirectory)
-                ? new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+                ? new FileStream(CNA.Content.XnaContentPath.ToTitlePath(path), FileMode.Open, FileAccess.Read, FileShare.Read)
                 : TitleContainer.OpenStream(path);
         }
         catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
@@ -237,11 +236,11 @@ public class ContentManager : IDisposable
             return CNA.GameThread.Invoke(() => ReadAsset<T>(assetName, recordDisposableObject));
         }
 
+        bool managedXnb = !IsNativeBackedBuiltIn(typeof(T)) || OpensItsOwnStreams;
         _textureReadDepth++;
         try
         {
-            bool managedXnb = !IsNativeBackedBuiltIn(typeof(T)) || OpensItsOwnStreams;
-            T result = LoadCore<T>(assetName, recordDisposableObject);
+            T result = LoadCore<T>(assetName, recordDisposableObject, ref managedXnb);
             if (!managedXnb && result is IDisposable disposable)
             {
                 recordDisposableObject?.Invoke(disposable);
@@ -260,11 +259,10 @@ public class ContentManager : IDisposable
         catch (CNA.CnaException exception) when (exception.CanonicalExceptionType is
             "System.NotSupportedException" or
             "System.InvalidOperationException" or "System.ArgumentException" or "System.ArgumentOutOfRangeException"
-            && AssetFileExists(assetName))
+            && (managedXnb || AssetFileExists(assetName)))
         {
-            // XNA's ReadAsset wraps IO failures, but lets constructor/SetData failures through. It
-            // opens the asset's stream first (OpenStream), so a missing file is always the
-            // ContentLoadException below, whatever a native loader reports for it.
+            // Reader constructor/SetData failures propagate even for virtual assets.
+            // The disk gate applies only to the native file-loading route.
             throw XnaExceptions.Translate(exception);
         }
         catch (CNA.CnaException exception)
@@ -285,15 +283,10 @@ public class ContentManager : IDisposable
         }
     }
 
-    private bool AssetFileExists(string assetName)
-    {
-        string path = CNA.Content.XnaContentPath.ToFilePath(RootDirectory, assetName, ".xnb");
-        return File.Exists(CNA.TitleContainer.IsPathAbsolute(RootDirectory)
-            ? path
-            : Path.Combine(AppContext.BaseDirectory, path));
-    }
+    private bool AssetFileExists(string assetName) =>
+        File.Exists(CNA.Content.XnaContentPath.ToTitleFilePath(RootDirectory, assetName, ".xnb"));
 
-    private T LoadCore<T>(string assetName, Action<IDisposable>? recordDisposableObject)
+    private T LoadCore<T>(string assetName, Action<IDisposable>? recordDisposableObject, ref bool managedXnb)
     {
         // XNA content is table-driven. The native CNA loaders remain the best route for the
         // native-backed built-ins below, but a user-defined T has no CNA type identity to dispatch
@@ -304,7 +297,7 @@ public class ContentManager : IDisposable
         // or a game's own reading packed or encrypted content -- decides where a font or a texture
         // comes from as well (CSX-129). CNA's loader takes a path, so those read through the
         // managed readers too.
-        if (!IsNativeBackedBuiltIn(typeof(T)) || OpensItsOwnStreams)
+        if (managedXnb)
         {
             using Stream stream = OpenStream(assetName);
             return ManagedXnbContentLoader.Load<T>(this, stream, assetName, recordDisposableObject);
@@ -361,6 +354,8 @@ public class ContentManager : IDisposable
 
             if (model is null)
             {
+                // The model probe can switch from the native route to managed readers.
+                managedXnb = true;
                 using Stream stream = OpenStream(assetName);
                 return ManagedXnbContentLoader.Load<T>(this, stream, assetName, recordDisposableObject);
             }
