@@ -66,8 +66,8 @@ public class CompatResourceContentTests
     }
 
     /// <summary>
-    /// CSX-133: XNA reported every failed load as ContentLoadException -- "File not found." for a
-    /// missing asset -- and games catch it: AlexMeuer's City Shooter loads building1, building2, ...
+    /// CSX-133: XNA reports a missing asset as ContentLoadException -- "File not found." -- and
+    /// games catch it: AlexMeuer's City Shooter loads building1, building2, ...
     /// until the missing one throws. CNA's own loader threw CnaException for the types it loads.
     /// </summary>
     [global::CNA.Integration.Tests.NativeFact]

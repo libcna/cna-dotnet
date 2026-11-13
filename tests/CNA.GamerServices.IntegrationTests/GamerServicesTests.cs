@@ -259,6 +259,121 @@ public class GamerServicesTests(GamerServicesGameFixture fixture, ITestOutputHel
     }
 
     [NativeFact]
+    public void Guide_MessageBoxEndWaitsForTheResetManagedEvent() =>
+        CheckGuideEndWait(keyboard: false, resetInCallback: false);
+
+    [NativeFact]
+    public void Guide_KeyboardEndWaitsForTheResetManagedEvent() =>
+        CheckGuideEndWait(keyboard: true, resetInCallback: false);
+
+    [NativeFact]
+    public void Guide_MessageBoxEndObservesACallbackReset() =>
+        CheckGuideEndWait(keyboard: false, resetInCallback: true);
+
+    [NativeFact]
+    public void Guide_KeyboardEndObservesACallbackReset() =>
+        CheckGuideEndWait(keyboard: true, resetInCallback: true);
+
+    [NativeFact]
+    public void Guide_MessageBoxEndRejectsADisposedCompletedEvent() =>
+        CheckGuideEndDisposedEvent(keyboard: false);
+
+    [NativeFact]
+    public void Guide_KeyboardEndRejectsADisposedCompletedEvent() =>
+        CheckGuideEndDisposedEvent(keyboard: true);
+
+    private void CheckGuideEndDisposedEvent(bool keyboard)
+    {
+        fixture.InsideAFrame(_ =>
+        {
+            IAsyncResult result = keyboard
+                ? Guide.BeginShowKeyboardInput(PlayerIndex.One, "Name", "Enter a name", "default", null!, null!)
+                : Guide.BeginShowMessageBox("Title", "Text", ["Yes", "No"], 0, MessageBoxIcon.None, null!, null!);
+            Assert.Equal(CnaResult.Success, keyboard
+                ? Native.cna_guide_simulate_keyboard_input_cancel_ext()
+                : Native.cna_guide_simulate_message_box_click_ext(1));
+            Assert.True(result.IsCompleted);
+            result.AsyncWaitHandle.Dispose();
+
+            if (keyboard) Assert.Throws<ObjectDisposedException>(() => Guide.EndShowKeyboardInput(result));
+            else Assert.Throws<ObjectDisposedException>(() => Guide.EndShowMessageBox(result));
+            // End consumes the result even when the wait handle is disposed.
+            if (keyboard) Assert.Throws<InvalidOperationException>(() => Guide.EndShowKeyboardInput(result));
+            else Assert.Throws<InvalidOperationException>(() => Guide.EndShowMessageBox(result));
+        });
+    }
+
+    private void CheckGuideEndWait(bool keyboard, bool resetInCallback)
+    {
+        fixture.InsideAFrame(_ =>
+        {
+            int callbacks = 0;
+            AsyncCallback callback = result =>
+            {
+                callbacks++;
+                if (resetInCallback) ((EventWaitHandle)result.AsyncWaitHandle).Reset();
+            };
+            IAsyncResult result = keyboard
+                ? Guide.BeginShowKeyboardInput(PlayerIndex.One, "Name", "Enter a name", "default", callback, null!)
+                : Guide.BeginShowMessageBox("Title", "Text", ["Yes", "No"], 0, MessageBoxIcon.None, callback, null!);
+            using var handle = (EventWaitHandle)result.AsyncWaitHandle;
+            Assert.Equal(CnaResult.Success, keyboard
+                ? Native.cna_guide_simulate_keyboard_input_cancel_ext()
+                : Native.cna_guide_simulate_message_box_click_ext(1));
+            Assert.True(result.IsCompleted);
+            Assert.Equal(1, callbacks);
+            if (!resetInCallback) handle.Reset();
+            Assert.False(handle.WaitOne(0));
+
+            // End stays on the game thread. Only the managed event crosses to the setter.
+            // As in CNA's RV-GUIDE-WAIT tests, keep setting until End returns so a late Reset
+            // cannot strand End. Give the old, non-waiting End a bounded window to return first.
+            using var returned = new ManualResetEventSlim();
+            // End must run on the game thread; a worker cannot safely abort it. Bound a
+            // regression hang by failing the test host with an explicit diagnostic.
+            var watchdog = new Thread(() =>
+            {
+                if (!returned.Wait(TimeSpan.FromSeconds(10)))
+                {
+                    Environment.FailFast("Guide End did not return within 10 seconds after the managed event was reset.");
+                }
+            }) { IsBackground = true };
+            int signaled = 0;
+            var setter = new Thread(() =>
+            {
+                for (int attempt = 0; attempt < 20 && !returned.Wait(10); attempt++) { }
+                while (!returned.IsSet)
+                {
+                    Volatile.Write(ref signaled, 1);
+                    handle.Set();
+                    returned.Wait(5);
+                }
+            });
+            bool signaledBeforeReturn = false;
+            watchdog.Start();
+            setter.IsBackground = true;
+            setter.Start();
+            try
+            {
+                if (keyboard) Assert.Null(Guide.EndShowKeyboardInput(result));
+                else Assert.Equal(1, Guide.EndShowMessageBox(result));
+                signaledBeforeReturn = Volatile.Read(ref signaled) != 0;
+            }
+            finally
+            {
+                returned.Set();
+                Assert.True(watchdog.Join(TimeSpan.FromSeconds(5)), "The End watchdog did not finish.");
+                Assert.True(setter.Join(TimeSpan.FromSeconds(5)), "The event setter did not finish.");
+            }
+
+            Assert.True(signaledBeforeReturn, "End returned before the reset managed event was signaled.");
+            Assert.True(handle.WaitOne(0), "End must not consume a manual-reset event.");
+            if (keyboard) Assert.Throws<InvalidOperationException>(() => Guide.EndShowKeyboardInput(result));
+            else Assert.Throws<InvalidOperationException>(() => Guide.EndShowMessageBox(result));
+        });
+    }
+
+    [NativeFact]
     public void LeaderboardIdentity_UsesTheKeyName()
     {
         LeaderboardIdentity identity = LeaderboardIdentity.Create(LeaderboardKey.BestScoreRecent, 3);

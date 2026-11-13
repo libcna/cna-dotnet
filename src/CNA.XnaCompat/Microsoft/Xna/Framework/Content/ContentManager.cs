@@ -11,6 +11,10 @@ public class ContentManager : IDisposable
         ContentManager> BackendFacades = new();
 
     private readonly IServiceProvider _serviceProvider;
+    private WeakReference<byte[]>? _weakTextureReadBuffer;
+    // Keep the buffer strong through nested reads, and weak between outermost reads.
+    private byte[]? _textureReadBuffer;
+    private int _textureReadDepth;
     private readonly Dictionary<string, object> _loadedAssets = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<IDisposable> _disposableAssets = [];
     private CNA.Content.ContentManager? _backend;
@@ -45,6 +49,26 @@ public class ContentManager : IDisposable
         _rootDirectory = backend.RootDirectory;
         _ownsBackend = false;
         BackendFacades.Add(backend, this);
+    }
+
+    // XNA reuses a sufficiently large content buffer: capacity is not the next level's count.
+    internal byte[] RetainTextureReadBuffer(byte[] data)
+    {
+        byte[]? buffer = _textureReadBuffer;
+        if (buffer is null)
+        {
+            _weakTextureReadBuffer?.TryGetTarget(out buffer);
+        }
+        if (buffer is not null && buffer.Length >= data.Length)
+        {
+            data.CopyTo(buffer, 0);
+            _textureReadBuffer = buffer;
+            return buffer;
+        }
+
+        _textureReadBuffer = data;
+        _weakTextureReadBuffer = new WeakReference<byte[]>(data);
+        return data;
     }
 
     public string RootDirectory
@@ -207,6 +231,13 @@ public class ContentManager : IDisposable
 
         ThrowIfDisposed();
 
+        // Derived loaders may call ReadAsset directly; serialize buffer reuse and uploads too.
+        if (!CNA.GameThread.IsCurrent)
+        {
+            return CNA.GameThread.Invoke(() => ReadAsset<T>(assetName, recordDisposableObject));
+        }
+
+        _textureReadDepth++;
         try
         {
             bool managedXnb = !IsNativeBackedBuiltIn(typeof(T)) || OpensItsOwnStreams;
@@ -226,18 +257,40 @@ public class ContentManager : IDisposable
         {
             throw new ContentLoadException(exception.Message, exception);
         }
+        catch (CNA.CnaException exception) when (exception.CanonicalExceptionType is
+            "System.NotSupportedException" or
+            "System.InvalidOperationException" or "System.ArgumentException" or "System.ArgumentOutOfRangeException"
+            && AssetFileExists(assetName))
+        {
+            // XNA's ReadAsset wraps IO failures, but lets constructor/SetData failures through. It
+            // opens the asset's stream first (OpenStream), so a missing file is always the
+            // ContentLoadException below, whatever a native loader reports for it.
+            throw XnaExceptions.Translate(exception);
+        }
         catch (CNA.CnaException exception)
         {
-            // CNA's own loader failed. XNA reported every load failure as ContentLoadException, and
-            // games rely on it: AlexMeuer's City Shooter loads building1, building2, ... until the
-            // missing one throws (CSX-133).
-            string path = CNA.Content.XnaContentPath.ToFilePath(RootDirectory, assetName, ".xnb");
-            bool exists = File.Exists(CNA.TitleContainer.IsPathAbsolute(RootDirectory)
-                ? path
-                : Path.Combine(AppContext.BaseDirectory, path));
+            // Keep the content wrapper for remaining failures, including missing assets (CSX-133).
             throw new ContentLoadException(
-                exists ? $"Error loading \"{assetName}\"." : $"Error loading \"{assetName}\". File not found.", exception);
+                AssetFileExists(assetName)
+                    ? $"Error loading \"{assetName}\"."
+                    : $"Error loading \"{assetName}\". File not found.",
+                exception);
         }
+        finally
+        {
+            if (--_textureReadDepth == 0)
+            {
+                _textureReadBuffer = null;
+            }
+        }
+    }
+
+    private bool AssetFileExists(string assetName)
+    {
+        string path = CNA.Content.XnaContentPath.ToFilePath(RootDirectory, assetName, ".xnb");
+        return File.Exists(CNA.TitleContainer.IsPathAbsolute(RootDirectory)
+            ? path
+            : Path.Combine(AppContext.BaseDirectory, path));
     }
 
     private T LoadCore<T>(string assetName, Action<IDisposable>? recordDisposableObject)

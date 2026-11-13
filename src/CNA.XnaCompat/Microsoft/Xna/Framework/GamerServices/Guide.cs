@@ -86,9 +86,12 @@ public static class Guide
     /// <summary>The chosen button, or null when the box closed without a choice.</summary>
     public static int? EndShowMessageBox(IAsyncResult result)
     {
-        GamerServicesAsyncResult.ForEnd(result, s_messageBoxOwner);
+        GamerServicesAsyncResult ours = GamerServicesAsyncResult.ForEnd(result, s_messageBoxOwner);
+        _ = ours.AsyncWaitHandle.WaitOne(0); // Reject disposal before entering the native modal pump.
         int button = -1;
         GamerServicesInterop.Check(Native.cna_guide_end_show_message_box(out byte hasChoice, out button), nameof(EndShowMessageBox));
+        // Native End pumps a pending dialog first; then honor the event exposed to managed callers.
+        ours.AsyncWaitHandle.WaitOne();
         return hasChoice != 0 ? button : null;
     }
 
@@ -121,10 +124,13 @@ public static class Guide
     /// <summary>The confirmed text, or null when the user cancelled -- XNA's contract.</summary>
     public static unsafe string EndShowKeyboardInput(IAsyncResult result)
     {
-        GamerServicesAsyncResult.ForEnd(result, s_keyboardOwner);
+        GamerServicesAsyncResult ours = GamerServicesAsyncResult.ForEnd(result, s_keyboardOwner);
+        _ = ours.AsyncWaitHandle.WaitOne(0);
         string text = GamerServicesInterop.ReadString(
             Native.cna_guide_end_show_keyboard_input_size, Native.cna_guide_end_show_keyboard_input, nameof(EndShowKeyboardInput));
         GamerServicesInterop.Check(Native.cna_guide_was_keyboard_input_canceled_ext(out byte canceled), nameof(EndShowKeyboardInput));
+        // The native event is independent of this result's caller-resettable managed event.
+        ours.AsyncWaitHandle.WaitOne();
         return canceled != 0 ? null! : text;
     }
 

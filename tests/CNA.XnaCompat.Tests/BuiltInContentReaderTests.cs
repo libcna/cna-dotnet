@@ -351,6 +351,35 @@ public class BuiltInContentReaderTests
         internal int Secret => _secret;
     }
 
+    // No device or native library: an impossible count must not bypass the device lookup.
+    [Theory]
+    [InlineData("Texture2D")]
+    [InlineData("TextureCube")]
+    [InlineData("Texture3D")]
+    public void TextureHeader_DoesNotRejectALargeLevelCountBeforeLookingUpTheDevice(string kind)
+    {
+        ContentLoadException failure = Assert.Throws<ContentLoadException>(() => Load<object>(
+            ["Microsoft.Xna.Framework.Content." + kind + "Reader" + Xna],
+            writer =>
+            {
+                writer.Write7BitEncodedInt(1);
+                writer.Write(0); // Color
+                writer.Write(1);
+                if (kind != "TextureCube")
+                {
+                    writer.Write(1);
+                }
+                if (kind == "Texture3D")
+                {
+                    writer.Write(1);
+                }
+                writer.Write(33);
+            }));
+
+        Assert.Equal("Content asset 'asset' contains a graphics resource, but its ContentManager's service " +
+            "provider supplies no IGraphicsDeviceService with a GraphicsDevice.", failure.Message);
+    }
+
     private enum ByteBacked : byte
     {
         First = 0,

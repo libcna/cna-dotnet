@@ -235,10 +235,18 @@ the phone assembly -- and at the boundaries XNA code catches around: `AudioEngin
 `SoundBank` construction (`NoAudioHardwareException`), `SoundEffect.CreateInstance`/`Play` and
 `SoundEffectInstance.Play` (`InstancePlayLimitException`), `Microphone.Start`
 (`NoMicrophoneConnectedException`), `MediaPlayer.Play` (`InvalidOperationException`), and
-`ContentManager.Load` (`ContentLoadException`, as before), and the `Game` constructor, which
+`ContentManager.Load` (`ContentLoadException` for a missing or unreadable asset; a texture or
+SpriteFont whose file exists but whose constructor or level upload fails raises that
+`NotSupportedException`, `InvalidOperationException`, `ArgumentException` or
+`ArgumentOutOfRangeException` itself, as XNA's readers do), and the `Game` constructor, which
 creates the device (`NoSuitableGraphicsDeviceException` when it cannot be created). Elsewhere a native refusal still
 surfaces as `CNA.CnaException` (carrying the canonical type), which XNA code catching a specific
 type would miss: the remaining facade calls are converted as they are met (CSX-080).
+Open (2026-11-13, found by the CNA next d1c936225 impact review, present since before it):
+`AudioEngine.GetGlobalVariable`/`SetGlobalVariable`, `Cue.Apply3D` and the spatial
+`SoundBank.PlayCue` overload forward native failures without `XnaExceptions.Guard`, so an invalid or
+inaccessible XACT variable reaches XNA code as `CnaException` (canonical
+`System.IndexOutOfRangeException`) rather than as `IndexOutOfRangeException`.
 
 ## The default graphics profile
 

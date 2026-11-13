@@ -14,7 +14,7 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   # Reviewed ABI 0.60.0, including the TQ behavior corrections. See the admission review.
   # All header and native jobs use this exact generation, never a moving branch.
-  CNA_UPSTREAM_COMMIT: a6c2ffe3d8ddeea2d19ae43c9e94bd00fbf5f78d
+  CNA_UPSTREAM_COMMIT: d1c93622503e8a3a45fbafa949046dc965f4a92e
   # Baseline of the immediately preceding consumer admission (ABI 0.47.0). A re-pin within the
   # same generation keeps it, so the diff keeps covering every change since that admission.
   CNA_PREVIOUS_ACCEPTED_COMMIT: fbd8e64a3fde18beeb2861d546a279d90d0ed5bc

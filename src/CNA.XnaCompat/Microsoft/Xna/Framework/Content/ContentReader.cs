@@ -224,6 +224,9 @@ public sealed class ContentReader : BinaryReader
         throw new InvalidOperationException("The supplied content type reader is not in this asset's reader table.");
     }
 
+    internal byte[] RetainTextureReadBuffer(byte[] data) =>
+        _contentManager.RetainTextureReadBuffer(data);
+
     internal int Read7BitEncodedInt32() => Read7BitEncodedInt();
 
     /// <summary>

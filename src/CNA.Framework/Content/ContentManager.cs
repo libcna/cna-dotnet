@@ -785,7 +785,9 @@ public class ContentManager : IDisposable
     ///
     /// Returns <see langword="false"/> rather than throwing when native cannot open the asset, so
     /// the managed <c>.xnb</c> parser still gets its turn -- a font this build of the engine does
-    /// not understand is exactly the case the fallback exists for. A failure *after* the font
+    /// not understand is exactly the case the fallback exists for. Canonical constructor/argument/state failures
+    /// from constructing or uploading the atlas do throw, as XNA's texture reader does, rather than
+    /// falling back to a parser that uploads only level 0. A failure *after* the font
     /// loaded is a different matter and does throw: at that point the asset is readable and
     /// something else is wrong, and falling back would hide it.
     /// </summary>
@@ -803,6 +805,14 @@ public class ContentManager : IDisposable
 
         if (load.IsFailure())
         {
+            // An atlas constructor or level failure must not be accepted by the level-0-only managed fallback.
+            if (CnaCanonicalException.LastType() is "System.InvalidOperationException" or
+                "System.NotSupportedException" or
+                "System.ArgumentException" or "System.ArgumentOutOfRangeException")
+            {
+                CnaException.ThrowIfFailed(load, nameof(LoadSpriteFontData));
+            }
+
             return false;
         }
 

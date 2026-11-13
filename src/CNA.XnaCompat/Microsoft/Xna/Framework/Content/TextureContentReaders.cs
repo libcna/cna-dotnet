@@ -24,7 +24,7 @@ internal sealed class Texture2DContentReader : ContentTypeReader<Texture2D>
         var format = (SurfaceFormat)input.ReadInt32();
         int width = input.ReadInt32();
         int height = input.ReadInt32();
-        int levelCount = ContentTextureLevels.Count(input, input.ReadInt32());
+        int levelCount = input.ReadInt32();
 
         var texture = new Texture2D(
             GraphicsContentHelper.GraphicsDeviceFromContentReader(input),
@@ -33,10 +33,18 @@ internal sealed class Texture2DContentReader : ContentTypeReader<Texture2D>
             levelCount > 1,
             format);
 
-        for (int level = 0; level < levelCount; level++)
+        try
         {
-            byte[] data = ContentTextureLevels.ReadLevel(input);
-            texture.SetData(level, null, data, 0, data.Length);
+            for (int level = 0; level < levelCount; level++)
+            {
+                byte[] data = ContentTextureLevels.ReadLevel(input, out int byteCount);
+                texture.SetData(level, null, data, 0, byteCount);
+            }
+        }
+        catch
+        {
+            texture.Dispose();
+            throw;
         }
 
         return texture;
@@ -52,7 +60,7 @@ internal sealed class TextureCubeContentReader : ContentTypeReader<TextureCube>
 
         var format = (SurfaceFormat)input.ReadInt32();
         int size = input.ReadInt32();
-        int levelCount = ContentTextureLevels.Count(input, input.ReadInt32());
+        int levelCount = input.ReadInt32();
 
         var texture = new TextureCube(
             GraphicsContentHelper.GraphicsDeviceFromContentReader(input),
@@ -60,15 +68,23 @@ internal sealed class TextureCubeContentReader : ContentTypeReader<TextureCube>
             levelCount > 1,
             format);
 
-        // Face-major, then level. Reversing the two loops reads the same bytes into the wrong
-        // faces and produces a cube that looks built but is scrambled.
-        for (CubeMapFace face = CubeMapFace.PositiveX; face <= CubeMapFace.NegativeZ; face++)
+        try
         {
-            for (int level = 0; level < levelCount; level++)
+            // Face-major, then level. Reversing the two loops reads the same bytes into the wrong
+            // faces and produces a cube that looks built but is scrambled.
+            for (CubeMapFace face = CubeMapFace.PositiveX; face <= CubeMapFace.NegativeZ; face++)
             {
-                byte[] data = ContentTextureLevels.ReadLevel(input);
-                texture.SetData(face, level, null, data, 0, data.Length);
+                for (int level = 0; level < levelCount; level++)
+                {
+                    byte[] data = ContentTextureLevels.ReadLevel(input, out int byteCount);
+                    texture.SetData(face, level, null, data, 0, byteCount);
+                }
             }
+        }
+        catch
+        {
+            texture.Dispose();
+            throw;
         }
 
         return texture;
@@ -87,7 +103,7 @@ internal sealed class Texture3DContentReader : ContentTypeReader<Texture3D>
         int width = input.ReadInt32();
         int height = input.ReadInt32();
         int depth = input.ReadInt32();
-        int levelCount = ContentTextureLevels.Count(input, input.ReadInt32());
+        int levelCount = input.ReadInt32();
 
         var texture = new Texture3D(
             GraphicsContentHelper.GraphicsDeviceFromContentReader(input),
@@ -97,13 +113,21 @@ internal sealed class Texture3DContentReader : ContentTypeReader<Texture3D>
             levelCount > 1,
             format);
 
-        for (int level = 0; level < levelCount; level++)
+        try
         {
-            byte[] data = ContentTextureLevels.ReadLevel(input);
-            texture.SetData(level, 0, 0, width, height, 0, depth, data, 0, data.Length);
-            width = Math.Max(width >> 1, 1);
-            height = Math.Max(height >> 1, 1);
-            depth = Math.Max(depth >> 1, 1);
+            for (int level = 0; level < levelCount; level++)
+            {
+                byte[] data = ContentTextureLevels.ReadLevel(input, out int byteCount);
+                texture.SetData(level, 0, 0, width, height, 0, depth, data, 0, byteCount);
+                width = Math.Max(width >> 1, 1);
+                height = Math.Max(height >> 1, 1);
+                depth = Math.Max(depth >> 1, 1);
+            }
+        }
+        catch
+        {
+            texture.Dispose();
+            throw;
         }
 
         return texture;
@@ -114,19 +138,11 @@ internal sealed class Texture3DContentReader : ContentTypeReader<Texture3D>
 /// like.</summary>
 internal static class ContentTextureLevels
 {
-    internal static int Count(ContentReader input, int levelCount)
+    internal static byte[] ReadLevel(ContentReader input, out int byteCount)
     {
-        if (levelCount > 32)
-        {
-            throw new ContentLoadException(
-                $"Content asset '{input.AssetName}' declares {levelCount} mip levels, which is not a possible chain.");
-        }
-
-        return levelCount;
+        byteCount = input.ReadInt32();
+        return input.RetainTextureReadBuffer(ReadExact(input, byteCount, "mip level"));
     }
-
-    internal static byte[] ReadLevel(ContentReader input) =>
-        ReadExact(input, input.ReadInt32(), "mip level");
 
     /// <summary>
     /// Reads exactly <paramref name="byteCount"/> bytes, or reports the asset as truncated.
